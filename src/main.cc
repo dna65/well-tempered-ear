@@ -149,8 +149,8 @@ int main(int argc, char** argv)
     };
 
     SDL_AudioSpec spec = {
-        .channels = 1,
         .format = SDL_AUDIO_F32,
+        .channels = 1,
         .freq = SAMPLE_RATE
     };
 
