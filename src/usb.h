@@ -63,7 +63,7 @@ struct DeviceHandle
     void Close();
 };
 
-constexpr void free_dev_list(libusb_device** ptr)
+inline void free_dev_list(libusb_device** ptr)
 {
     libusb_free_device_list(ptr, true);
 }
