@@ -1,8 +1,11 @@
 #pragma once
 
+#include <chrono>
 #include <ranges>
 #include <string_view>
 #include <type_traits>
+#include <unordered_map>
+#include <vector>
 
 #include "tb.h"
 #include "stream.h"
