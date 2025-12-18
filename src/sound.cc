@@ -12,8 +12,8 @@ constexpr auto clampf = [] (float min, float max, float val) -> float {
 
 Generator::Generator(int sample_rate) : sample_rate_(sample_rate) {}
 
-std::vector<float> Generator::GenerateSamples(size_t count,
-    const midi::Player& midi_status)
+size_t Generator::GenerateSamples(std::span<Sample> samples, size_t count,
+    const midi::Player& midi_status, unsigned sample_offset)
 {
     constexpr auto pulse = [] (uint8_t note, unsigned point, unsigned rate) {
         float x = point * midi_to_freq(note) / rate;
@@ -30,14 +30,15 @@ std::vector<float> Generator::GenerateSamples(size_t count,
         return sinf(point * 2.f * M_PI * midi_to_freq(note) / rate);
     };
 
-    std::vector<float> samples(count, 0.f);
+    if (count > samples.size())
+        count = samples.size();
 
-    unsigned start_point = sample_point_;
+    unsigned start_point = sample_point_ - sample_offset;
     midi::Ticks current_time = midi_status.GetTicksElapsed();
 
     float samples_per_tick = sample_rate_ / midi_status.GetDeltaPerSecond();
 
-    for (float& sample : samples) {
+    for (size_t i = 0; i < count; ++i) {
         ++sample_point_;
         unsigned sample_point_diff
             = sample_point_ < start_point ? (UINT32_MAX - start_point + sample_point_)
@@ -53,13 +54,14 @@ std::vector<float> Generator::GenerateSamples(size_t count,
 
             float decay = clampf(-1.f, 1.f, powf(2, time_diff / half_life * -1));
 
-            sample += pulse(note, sample_point_, sample_rate_)
-                    * volume
-                    * (info.velocity / MAX_VELOCITY)
-                    * decay;
+            samples[i] += pulse(note, sample_point_, sample_rate_)
+                        * volume
+                        * (info.velocity / MAX_VELOCITY)
+                        * decay;
         }
     }
-    return samples;
+
+    return count;
 }
 
 void SoundCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
@@ -70,40 +72,54 @@ void SoundCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
     auto* sound_ctx = static_cast<SoundContext*>(ctx);
     Generator& generator = sound_ctx->generator;
     midi::Player& midi_player = sound_ctx->midi_player;
+    auto& sample_buffer = sound_ctx->sample_buffer;
+    unsigned& samples_since_last_event = sound_ctx->samples_since_last_event;
+
+    sample_buffer.fill(0.f);
 
     std::lock_guard<std::mutex> guard(sound_ctx->lock);
 
     // Live playback
     if (midi_player.mode == midi::PlayerMode::LIVE_PLAYBACK) {
-        std::vector<float> samples
-            = generator.GenerateSamples(additional_amount, midi_player);
-        SDL_PutAudioStreamData(stream, samples.data(),
-                samples.size() * sizeof(float));
+        size_t samples = generator.GenerateSamples(sample_buffer, additional_amount,
+            midi_player, 0);
+        SDL_PutAudioStreamData(stream, sample_buffer.data(), samples * sizeof(Sample));
         return;
     }
 
-    midi::Ticks total_ticks_advanced = 0;
     float samples_per_tick = generator.sample_rate_ / midi_player.GetDeltaPerSecond();
 
+    size_t total_samples = 0;
+
     // File playback
-    while (total_ticks_advanced * samples_per_tick < additional_amount) {
-        // TODO: Can potentially put indefinitely many samples, address
+    while (total_samples < static_cast<size_t>(additional_amount)) {
         std::optional<midi::Ticks> ticks = midi_player.TicksUntilNextEvent();
-        if (!ticks) return;
+        if (!ticks) break;
 
         samples_per_tick = generator.sample_rate_ / midi_player.GetDeltaPerSecond();
+        std::span<Sample> sample_buffer_range {
+            sample_buffer.begin() + total_samples,
+            sample_buffer.end()
+        };
 
-        if (ticks > 0) {
-            total_ticks_advanced += ticks.value();
+        size_t requested_samples = ticks.value() * samples_per_tick
+            - samples_since_last_event;
+        size_t samples_generated = generator.GenerateSamples(sample_buffer_range,
+            requested_samples, midi_player, samples_since_last_event);
 
-            std::vector<float> samples
-                = generator.GenerateSamples(ticks.value() * samples_per_tick,
-                midi_player);
-            SDL_PutAudioStreamData(stream, samples.data(),
-                samples.size() * sizeof(float));
+        total_samples += samples_generated;
+
+        if (samples_generated < requested_samples) {
+            samples_since_last_event += samples_generated;
+            break;
         }
 
+        samples_since_last_event = 0;
+
         if (midi_player.Advance().is_error())
-            return;
+            break;
     }
+
+    SDL_PutAudioStreamData(stream, sample_buffer.data(),
+        total_samples * sizeof(Sample));
 }
