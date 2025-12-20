@@ -10,33 +10,36 @@ tb::result<DeviceHandle, Error> DeviceEntry::Open(void* event_context_user_data)
     if (err != LIBUSB_SUCCESS)
         return Error { err };
 
+    DeviceHandle result {
+        .entry { *this },
+        .dev_handle { dev_handle },
+        .user_data = event_context_user_data
+    };
+
     libusb_set_auto_detach_kernel_driver(dev_handle, 1);
 
     if ((err = libusb_claim_interface(dev_handle, interface_index))
-        != LIBUSB_SUCCESS) {
+        != LIBUSB_SUCCESS)
         return Error { err };
-    }
 
     libusb_config_descriptor* cfg_desc;
     if ((err = libusb_get_active_config_descriptor(device_, &cfg_desc))
         != LIBUSB_SUCCESS)
         return Error { err };
 
+    result.cfg_desc.reset(cfg_desc);
+
     libusb_transfer* transfer = libusb_alloc_transfer(0);
-    if (transfer == nullptr) {
+    if (transfer == nullptr)
         return Error { err };
-    }
 
-    auto* buffer = static_cast<uint8_t*>(malloc(endpoint_in_packet_size));
+    result.transfer.reset(transfer);
 
-    return DeviceHandle {
-        .entry { *this },
-        .dev_handle { dev_handle },
-        .cfg_desc { cfg_desc },
-        .transfer { transfer },
-        .packet_buffer { buffer },
-        .user_data = event_context_user_data
-    };
+    result.packet_buffer.reset(static_cast<uint8_t*>(malloc(endpoint_in_packet_size)));
+    if (result.packet_buffer == nullptr)
+        return Error { LIBUSB_ERROR_NO_MEM };
+
+    return result;
 }
 
 void TransferCallback(libusb_transfer* transfer)
