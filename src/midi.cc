@@ -1,6 +1,6 @@
 #include "midi.h"
 
-#include <unistd.h>
+#include <limits>
 
 struct VariableLengthInt
 {
@@ -307,7 +307,7 @@ auto Player::TicksUntilNextEvent() const -> std::optional<Ticks>
 {
     if (!midi_ptr_) return std::nullopt;
 
-    Ticks shortest = UINT64_MAX;
+    Ticks shortest = std::numeric_limits<Ticks>::max();
     for (auto& [track, info] : tracks_) {
         if (info.done) continue;
         const Event& next_ev = track->events[info.current_event_index + 1];
@@ -315,7 +315,7 @@ auto Player::TicksUntilNextEvent() const -> std::optional<Ticks>
             shortest = next_ev.delta_time - info.playback_ticks;
     }
 
-    if (shortest == UINT64_MAX)
+    if (shortest == std::numeric_limits<Ticks>::max())
         return std::nullopt;
 
     return shortest;
