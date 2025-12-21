@@ -3,7 +3,8 @@
 namespace usb
 {
 
-tb::result<DeviceHandle, Error> DeviceEntry::Open(void* event_context_user_data) const
+auto DeviceEntry::Open(void* event_context_user_data) const
+-> tb::result<DeviceHandle, Error>
 {
     libusb_device_handle* dev_handle;
     int err = libusb_open(device_, &dev_handle);
@@ -98,7 +99,7 @@ PollingContext::~PollingContext()
     thread_.join();
 }
 
-tb::error<Error> Init()
+auto Init() -> tb::error<Error>
 {
     int err = libusb_init_context(NULL, NULL, 0);
     if (err != LIBUSB_SUCCESS)
@@ -106,7 +107,7 @@ tb::error<Error> Init()
     return tb::ok;
 }
 
-tb::result<DeviceList, Error> IndexDevices()
+auto IndexDevices() -> tb::result<DeviceList, Error>
 {
     libusb_device** devices;
     ssize_t count = libusb_get_device_list(NULL, &devices);
@@ -117,7 +118,8 @@ tb::result<DeviceList, Error> IndexDevices()
     return list;
 }
 
-tb::result<std::vector<DeviceEntry>, Error> SearchMIDIDevices(const DeviceList& list)
+auto SearchMIDIDevices(const DeviceList& list)
+-> tb::result<std::vector<DeviceEntry>, Error>
 {
     std::vector<DeviceEntry> result;
     int ret;

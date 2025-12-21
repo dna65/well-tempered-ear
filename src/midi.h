@@ -73,7 +73,7 @@ struct Error
     constexpr Error(ErrorType type, size_t byte_pos = 0)
     : byte_position(byte_pos), type(type) {}
 
-    constexpr std::string_view What() const
+    constexpr auto What() const -> std::string_view
     {
         switch (type) {
         case FILE_NOT_FOUND: return "file not found";
@@ -156,14 +156,15 @@ private:
 class Player
 {
 public:
+    using NoteMap = std::unordered_map<uint8_t, NoteInfo>;
     Player() = default;
 
-    tb::error<EndOfMidiError> Advance();
+    auto Advance() -> tb::error<EndOfMidiError>;
     void PlayEvent(const Event& event);
-    std::optional<Ticks> TicksUntilNextEvent() const;
-    const std::unordered_map<uint8_t, NoteInfo>& GetCurrentNotes() const;
-    Ticks GetTicksElapsed() const;
-    float GetDeltaPerSecond() const;
+    auto TicksUntilNextEvent() const -> std::optional<Ticks>;
+    auto GetCurrentNotes() const -> const NoteMap&;
+    auto GetTicksElapsed() const -> Ticks;
+    auto GetDeltaPerSecond() const -> float;
     void SetMIDI(const MIDI& midi);
 
     PlayerMode mode = PlayerMode::FILE_PLAYBACK;
@@ -172,7 +173,7 @@ private:
     using TimePoint = std::chrono::time_point<Clock>;
     using Seconds = std::chrono::duration<double>;
 
-    std::unordered_map<uint8_t, NoteInfo> notes_;
+    NoteMap notes_;
     std::vector<std::pair<const Track*, PlaybackInfo>> tracks_;
     const MIDI* midi_ptr_ = nullptr;
     TimePoint start_time_ = Clock::now();

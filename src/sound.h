@@ -22,8 +22,9 @@ struct Generator
 {
     Generator(int sample_rate = DEFAULT_SAMPLE_RATE);
 
-    size_t GenerateSamples(std::span<Sample> dest, size_t count,
-                           const midi::Player& midi_status, unsigned sample_offset);
+    auto GenerateSamples(std::span<Sample> dest, size_t count,
+                         const midi::Player& midi_status, unsigned sample_offset)
+    -> size_t;
 
     int sample_rate_ = DEFAULT_SAMPLE_RATE;
     unsigned sample_point_ = 0;
@@ -40,4 +41,4 @@ struct SoundContext
 };
 
 void SoundCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
-    int total_amount);
+                   int total_amount);

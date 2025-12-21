@@ -25,7 +25,7 @@ struct Error
 {
     int error_code;
 
-    std::string_view What() const
+    auto What() const -> std::string_view
     {
         return libusb_strerror(error_code);
     }
@@ -41,7 +41,7 @@ struct DeviceEntry
     uint16_t endpoint_in_packet_size;
     uint8_t endpoint_in_addr, endpoint_out_addr;
 
-    tb::result<DeviceHandle, Error> Open(void* event_context_user_data) const;
+    auto Open(void* event_context_user_data) const -> tb::result<DeviceHandle, Error>;
 };
 
 using UHandle = std::unique_ptr<libusb_device_handle, tb::deleter<libusb_close>>;
@@ -80,9 +80,10 @@ struct PollingContext
     ~PollingContext();
 };
 
-tb::error<Error> Init();
-tb::result<DeviceList, Error> IndexDevices();
-tb::result<std::vector<DeviceEntry>, Error> SearchMIDIDevices(const DeviceList& list);
+auto Init() -> tb::error<Error>;
+auto IndexDevices() -> tb::result<DeviceList, Error>;
+auto SearchMIDIDevices(const DeviceList& list)
+-> tb::result<std::vector<DeviceEntry>, Error>;
 void Exit();
 
 }

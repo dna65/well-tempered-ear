@@ -12,8 +12,8 @@ constexpr auto clampf = [] (float min, float max, float val) -> float {
 
 Generator::Generator(int sample_rate) : sample_rate_(sample_rate) {}
 
-size_t Generator::GenerateSamples(std::span<Sample> samples, size_t count,
-    const midi::Player& midi_status, unsigned sample_offset)
+auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
+    const midi::Player& midi_status, unsigned sample_offset) -> size_t
 {
     constexpr auto pulse = [] (uint8_t note, unsigned point, unsigned rate) {
         float x = point * midi_to_freq(note) / rate;

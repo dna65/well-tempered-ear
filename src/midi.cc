@@ -232,7 +232,7 @@ auto MIDI::FromStream(FILE* file) -> tb::result<MIDI, Error>
     return midi;
 }
 
-tb::error<EndOfMidiError> Player::Advance()
+auto Player::Advance() -> tb::error<EndOfMidiError>
 {
     std::optional<Ticks> ticks = TicksUntilNextEvent();
     if (!ticks) return EndOfMidiError {};
@@ -303,7 +303,7 @@ void Player::PlayEvent(const Event& event)
     }
 }
 
-std::optional<Ticks> Player::TicksUntilNextEvent() const
+auto Player::TicksUntilNextEvent() const -> std::optional<Ticks>
 {
     if (!midi_ptr_) return std::nullopt;
 
@@ -321,7 +321,7 @@ std::optional<Ticks> Player::TicksUntilNextEvent() const
     return shortest;
 }
 
-const std::unordered_map<uint8_t, NoteInfo>& Player::GetCurrentNotes() const
+auto Player::GetCurrentNotes() const -> const NoteMap&
 {
     return notes_;
 }
@@ -335,7 +335,7 @@ void Player::SetMIDI(const MIDI& midi)
     }
 }
 
-Ticks Player::GetTicksElapsed() const
+auto Player::GetTicksElapsed() const -> Ticks
 {
     if (mode == PlayerMode::LIVE_PLAYBACK) {
         Seconds time_diff = Clock::now() - start_time_;
@@ -344,7 +344,7 @@ Ticks Player::GetTicksElapsed() const
     return ticks_elapsed_;
 }
 
-float Player::GetDeltaPerSecond() const
+auto Player::GetDeltaPerSecond() const -> float
 {
     return delta_per_second_;
 }
