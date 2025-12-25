@@ -232,6 +232,8 @@ auto MIDI::FromStream(FILE* file) -> tb::result<MIDI, Error>
     return midi;
 }
 
+Player::Player(PlayerMode mode) : mode_(mode) {}
+
 auto Player::Advance() -> tb::error<EndOfMidiError>
 {
     std::optional<Ticks> ticks = TicksUntilNextEvent();
@@ -337,7 +339,7 @@ void Player::SetMIDI(const MIDI& midi)
 
 auto Player::GetTicksElapsed() const -> Ticks
 {
-    if (mode == PlayerMode::LIVE_PLAYBACK) {
+    if (mode_ == PlayerMode::LIVE_PLAYBACK) {
         Seconds time_diff = Clock::now() - start_time_;
         return delta_per_second_ * time_diff.count();
     }

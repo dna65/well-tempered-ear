@@ -1,5 +1,7 @@
 #include "sound.h"
 
+#include <algorithm>
+
 constexpr auto midi_to_freq = [] (uint8_t note) -> float {
     return 440.f * powf(2, (note - 69) / 12.f);
 };
@@ -64,50 +66,61 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
     return count;
 }
 
-void SoundCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
+void Audio_LiveCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
     int total_amount)
 {
     if (additional_amount < 1) return;
 
     auto* sound_ctx = static_cast<SoundContext*>(ctx);
-    Generator& generator = sound_ctx->generator;
-    midi::Player& midi_player = sound_ctx->midi_player;
-    auto& sample_buffer = sound_ctx->sample_buffer;
-    unsigned& samples_since_last_event = sound_ctx->samples_since_last_event;
+    auto& playback_unit = static_cast<PlaybackUnit&>(sound_ctx->live_playback);
 
-    sample_buffer.fill(0.f);
+    Generator& generator = playback_unit.generator;
+    midi::Player& live_player = playback_unit.player;
+    auto& sample_buffer = playback_unit.sample_buffer;
+
+    std::ranges::fill(sample_buffer, Sample {});
 
     std::lock_guard<std::mutex> guard(sound_ctx->lock);
+    size_t samples = generator.GenerateSamples(sample_buffer,
+        additional_amount, live_player, 0);
+    SDL_PutAudioStreamData(stream, sample_buffer.data(), samples * sizeof(Sample));
+}
 
-    // Live playback
-    if (midi_player.mode == midi::PlayerMode::LIVE_PLAYBACK) {
-        size_t samples = generator.GenerateSamples(sample_buffer, additional_amount,
-            midi_player, 0);
-        SDL_PutAudioStreamData(stream, sample_buffer.data(), samples * sizeof(Sample));
-        return;
-    }
+void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
+    int total_amount)
+{
+    if (additional_amount < 1) return;
 
-    float samples_per_tick = generator.sample_rate_ / midi_player.GetDeltaPerSecond();
+    auto* sound_ctx = static_cast<SoundContext*>(ctx);
+    auto& playback_unit = static_cast<PlaybackUnit&>(sound_ctx->file_playback);
 
-    size_t total_samples = 0;
+    Generator& generator = playback_unit.generator;
+    midi::Player& file_player = playback_unit.player;
+    auto& sample_buffer = playback_unit.sample_buffer;
+    unsigned& samples_since_last_event = playback_unit.samples_since_last_event;
 
-    // File playback
-    while (total_samples < static_cast<size_t>(additional_amount)) {
-        std::optional<midi::Ticks> ticks = midi_player.TicksUntilNextEvent();
+    std::ranges::fill(sample_buffer, Sample {});
+
+    std::lock_guard<std::mutex> guard(sound_ctx->lock);
+    float samples_per_tick = generator.sample_rate_ / file_player.GetDeltaPerSecond();
+    size_t samples = 0;
+
+    while (samples < static_cast<size_t>(additional_amount)) {
+        std::optional<midi::Ticks> ticks = file_player.TicksUntilNextEvent();
         if (!ticks) break;
 
-        samples_per_tick = generator.sample_rate_ / midi_player.GetDeltaPerSecond();
+        samples_per_tick = generator.sample_rate_ / file_player.GetDeltaPerSecond();
         std::span<Sample> sample_buffer_range {
-            sample_buffer.begin() + total_samples,
+            sample_buffer.begin() + samples,
             sample_buffer.end()
         };
 
         size_t requested_samples = ticks.value() * samples_per_tick
             - samples_since_last_event;
         size_t samples_generated = generator.GenerateSamples(sample_buffer_range,
-            requested_samples, midi_player, samples_since_last_event);
+            requested_samples, file_player, samples_since_last_event);
 
-        total_samples += samples_generated;
+        samples += samples_generated;
 
         if (samples_generated < requested_samples) {
             samples_since_last_event += samples_generated;
@@ -116,10 +129,9 @@ void SoundCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
 
         samples_since_last_event = 0;
 
-        if (midi_player.Advance().is_error())
+        if (file_player.Advance().is_error())
             break;
     }
 
-    SDL_PutAudioStreamData(stream, sample_buffer.data(),
-        total_samples * sizeof(Sample));
+    SDL_PutAudioStreamData(stream, sample_buffer.data(), samples * sizeof(Sample));
 }

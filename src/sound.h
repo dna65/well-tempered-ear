@@ -14,7 +14,7 @@
 
 constexpr int DEFAULT_SAMPLE_RATE = 4000;
 constexpr float MAX_VELOCITY = UINT8_MAX;
-constexpr size_t SAMPLE_BUFFER_SIZE = 8192;
+constexpr size_t SAMPLE_BUFFER_SIZE = 4096;
 
 using Sample = float;
 
@@ -30,15 +30,22 @@ struct Generator
     unsigned sample_point_ = 0;
 };
 
-struct SoundContext
+struct PlaybackUnit
 {
+    midi::Player player;
+    std::vector<Sample> sample_buffer = std::vector<Sample>(SAMPLE_BUFFER_SIZE);
+    SDL_AudioStream* stream = nullptr;
     Generator generator;
-    midi::Player midi_player;
-    std::mutex lock;
-    SDL_AudioStream* astream = nullptr;
-    std::array<Sample, SAMPLE_BUFFER_SIZE> sample_buffer {};
     unsigned samples_since_last_event = 0;
 };
 
-void SoundCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
-                   int total_amount);
+struct SoundContext
+{
+    PlaybackUnit live_playback, file_playback;
+    std::mutex lock;
+};
+
+void Audio_LiveCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
+                        int total_amount);
+void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
+                        int total_amount);

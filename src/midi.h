@@ -157,7 +157,7 @@ class Player
 {
 public:
     using NoteMap = std::unordered_map<uint8_t, NoteInfo>;
-    Player() = default;
+    Player(PlayerMode mode = PlayerMode::FILE_PLAYBACK);
 
     auto Advance() -> tb::error<EndOfMidiError>;
     void PlayEvent(const Event& event);
@@ -167,7 +167,7 @@ public:
     auto GetDeltaPerSecond() const -> float;
     void SetMIDI(const MIDI& midi);
 
-    PlayerMode mode = PlayerMode::FILE_PLAYBACK;
+    PlayerMode mode_;
 private:
     using Clock = std::chrono::high_resolution_clock;
     using TimePoint = std::chrono::time_point<Clock>;
