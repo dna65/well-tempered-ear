@@ -167,7 +167,6 @@ public:
     auto GetDeltaPerSecond() const -> float;
     void SetMIDI(const MIDI& midi);
 
-    PlayerMode mode_;
 private:
     using Clock = std::chrono::high_resolution_clock;
     using TimePoint = std::chrono::time_point<Clock>;
@@ -179,6 +178,9 @@ private:
     TimePoint start_time_ = Clock::now();
     Ticks ticks_elapsed_ = 0;
     float delta_per_second_ = 960.f;
+public:
+    PlayerMode mode_;
+    uint8_t transposition_offset_ = 0;
 };
 
 }

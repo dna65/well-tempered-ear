@@ -55,14 +55,19 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
             = current_time - info.time
             + (sample_offset * midi_status.GetDeltaPerSecond() / sample_rate_);
         float decay = std::clamp(
-            powf(2, initial_ticks_diff * decay_constant / (-1.f * midi_status.GetDeltaPerSecond())),
+            powf(2, initial_ticks_diff * decay_constant
+                    / (-1.f * midi_status.GetDeltaPerSecond())),
             -1.f, 1.f
         );
+
+        uint8_t transposed_note
+            = std::clamp<uint8_t>(note + midi_status.transposition_offset_, 0, 127);
+
         for (size_t i = 0; i < count; ++i) {
             ++sample_point_;
             decay *= decay_common_ratio;
 
-            samples[i] += pulse(note, sample_point_, sample_rate_)
+            samples[i] += pulse(transposed_note, sample_point_, sample_rate_)
                         * volume
                         * (info.velocity / MAX_VELOCITY)
                         * decay;
