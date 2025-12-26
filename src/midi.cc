@@ -234,10 +234,10 @@ auto MIDI::FromStream(FILE* file) -> tb::result<MIDI, Error>
 
 Player::Player(PlayerMode mode) : mode_(mode) {}
 
-auto Player::Advance() -> tb::error<EndOfMidiError>
+auto Player::Advance() -> tb::error<EndOfMIDIError>
 {
     std::optional<Ticks> ticks = TicksUntilNextEvent();
-    if (!ticks) return EndOfMidiError {};
+    if (!ticks) return EndOfMIDIError {};
 
     ticks_elapsed_ += ticks.value();
 

@@ -59,7 +59,7 @@ enum class PlayerMode
     FILE_PLAYBACK, LIVE_PLAYBACK
 };
 
-struct EndOfMidiError {};
+struct EndOfMIDIError {};
 
 struct Error
 {
@@ -173,7 +173,7 @@ public:
     using NoteMap = std::unordered_map<uint8_t, NoteInfo>;
     Player(PlayerMode mode = PlayerMode::FILE_PLAYBACK);
 
-    auto Advance() -> tb::error<EndOfMidiError>;
+    auto Advance() -> tb::error<EndOfMIDIError>;
     void PlayEvent(const Event& event);
     auto TicksUntilNextEvent() const -> std::optional<Ticks>;
     auto GetCurrentNotes() const -> const NoteMap&;
