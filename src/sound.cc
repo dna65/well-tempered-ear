@@ -6,12 +6,6 @@ constexpr auto midi_to_freq = [] (uint8_t note) -> float {
     return 440.f * powf(2, (note - 69) / 12.f);
 };
 
-constexpr auto clampf = [] (float min, float max, float val) -> float {
-    if (val < min) return min;
-    if (val > max) return max;
-    return val;
-};
-
 Generator::Generator(int sample_rate) : sample_rate_(sample_rate) {}
 
 auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
@@ -54,7 +48,7 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
             float time_diff = (current_time + extra_time - info.time)
                 / midi_status.GetDeltaPerSecond();
 
-            float decay = clampf(-1.f, 1.f, powf(2, time_diff / half_life * -1));
+            float decay = std::clamp(powf(2, time_diff / half_life * -1), -1.f, 1.f);
 
             samples[i] += pulse(note, sample_point_, sample_rate_)
                         * volume
