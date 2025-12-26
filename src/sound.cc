@@ -2,9 +2,20 @@
 
 #include <algorithm>
 
-constexpr auto midi_to_freq = [] (uint8_t note) -> float {
-    return 440.f * powf(2, (note - 69) / 12.f);
-};
+constexpr float C_MINUS_2_A440 = 8.175f;
+constexpr float COMMON_PITCH_RATIO = 1.0595f;
+
+constexpr auto NOTE_TO_FREQUENCY_TABLE = [] () -> std::array<float, 128> {
+    std::array<float, 128> result {};
+    std::generate(result.begin(), result.end(),
+        [n = C_MINUS_2_A440] () mutable -> float {
+            float x = n;
+            n *= COMMON_PITCH_RATIO;
+            return x;
+        }
+    );
+    return result;
+}();
 
 Generator::Generator(int sample_rate) : sample_rate_(sample_rate) {}
 
@@ -12,7 +23,7 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
     const midi::Player& midi_status, unsigned sample_offset) -> size_t
 {
     constexpr auto pulse = [] (uint8_t note, unsigned point, unsigned rate) {
-        float x = point * midi_to_freq(note) / rate;
+        float x = point * NOTE_TO_FREQUENCY_TABLE[note] / rate;
         float x_i = floor(x);
 
         float x2 = x - (rate * 0.5) / rate;
@@ -23,7 +34,7 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
 
     [[maybe_unused]]
     constexpr auto sine = [] (uint8_t note, unsigned point, unsigned rate) {
-        return sinf(point * 2.f * M_PI * midi_to_freq(note) / rate);
+        return sinf(point * 2.f * M_PI * NOTE_TO_FREQUENCY_TABLE[note] / rate);
     };
 
     if (count > samples.size())
