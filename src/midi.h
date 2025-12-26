@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <chrono>
+#include <iterator>
 #include <ranges>
 #include <string_view>
 #include <type_traits>
@@ -109,6 +111,18 @@ struct Track
     std::vector<Event> events;
 
     static auto FromStream(FILE* file) -> tb::result<Track, Error>;
+
+    template<typename BackInsertable>
+    void ToNoteSeries(BackInsertable& output) const
+    {
+        std::ranges::transform(
+            events | std::views::filter([] (const Event& e) -> bool {
+                return e.type == EventType::NOTE_ON;
+            }),
+            std::back_inserter(output),
+            [] (const Event& e) -> uint8_t { return e.note_event.note; }
+        );
+    }
 };
 
 struct PlaybackInfo
