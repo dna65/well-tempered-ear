@@ -40,26 +40,27 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
     if (count > samples.size())
         count = samples.size();
 
-    unsigned start_point = sample_point_ - sample_offset;
     midi::Ticks current_time = midi_status.GetTicksElapsed();
 
-    float samples_per_tick = sample_rate_ / midi_status.GetDeltaPerSecond();
+    float volume = 0.3f;
+    float half_life = 0.2f;
+    float decay_constant = 1.f / half_life;
+    float decay_common_ratio = powf(2, (-1.f / sample_rate_) * decay_constant);
 
-    for (size_t i = 0; i < count; ++i) {
-        ++sample_point_;
-        unsigned sample_point_diff
-            = sample_point_ < start_point ? (UINT32_MAX - start_point + sample_point_)
-                                          : (sample_point_ - start_point);
+    unsigned start_point = sample_point_;
 
-        midi::Ticks extra_time = sample_point_diff / samples_per_tick;
-
-        for (auto& [note, info] : midi_status.GetCurrentNotes()) {
-            float volume = 0.2f;
-            float half_life = 0.3f;
-            float time_diff = (current_time + extra_time - info.time)
-                / midi_status.GetDeltaPerSecond();
-
-            float decay = std::clamp(powf(2, time_diff / half_life * -1), -1.f, 1.f);
+    for (auto& [note, info] : midi_status.GetCurrentNotes()) {
+        sample_point_ = start_point;
+        float initial_ticks_diff
+            = current_time - info.time
+            + (sample_offset * midi_status.GetDeltaPerSecond() / sample_rate_);
+        float decay = std::clamp(
+            powf(2, initial_ticks_diff * decay_constant / (-1.f * midi_status.GetDeltaPerSecond())),
+            -1.f, 1.f
+        );
+        for (size_t i = 0; i < count; ++i) {
+            ++sample_point_;
+            decay *= decay_common_ratio;
 
             samples[i] += pulse(note, sample_point_, sample_rate_)
                         * volume
