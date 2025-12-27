@@ -112,7 +112,6 @@ void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
 
     std::ranges::fill(sample_buffer, Sample {});
 
-    std::lock_guard<std::mutex> guard(sound_ctx->lock);
     float samples_per_tick = generator.sample_rate_ / file_player.GetDeltaPerSecond();
     size_t samples = 0;
 
