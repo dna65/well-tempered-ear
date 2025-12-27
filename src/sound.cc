@@ -7,7 +7,7 @@ constexpr float COMMON_PITCH_RATIO = 1.0595f;
 
 constexpr auto NOTE_TO_FREQUENCY_TABLE = [] () -> std::array<float, 128> {
     std::array<float, 128> result {};
-    std::generate(result.begin(), result.end(),
+    std::ranges::generate(result,
         [n = C_MINUS_2_A440] () mutable -> float {
             float x = n;
             n *= COMMON_PITCH_RATIO;
