@@ -138,8 +138,6 @@ struct NoteInfo
     uint8_t velocity;
 };
 
-constexpr size_t MIDI_HEADER_SIZE = 14;
-
 class MIDI
 {
 public:
