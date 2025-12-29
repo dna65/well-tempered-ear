@@ -32,7 +32,7 @@ struct result_internal
 template<typename E>
 struct result_internal<void, E>
 {
-    E err;
+    union { E err; };
     const bool is_err;
 
     result_internal(ok_t) : is_err(false) {}

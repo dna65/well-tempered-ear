@@ -8,7 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include <SDL3/SDL.h>
+#include <SDL3/SDL_audio.h>
 
 #include "midi.h"
 
@@ -17,6 +17,8 @@ constexpr float MAX_VELOCITY = UINT8_MAX;
 constexpr size_t SAMPLE_BUFFER_SIZE = 4096;
 
 using Sample = float;
+using UAudioStream = std::unique_ptr<SDL_AudioStream,
+    tb::deleter<SDL_DestroyAudioStream>>;
 
 struct Generator
 {
@@ -34,7 +36,7 @@ struct PlaybackUnit
 {
     midi::Player player;
     std::vector<Sample> sample_buffer = std::vector<Sample>(SAMPLE_BUFFER_SIZE);
-    SDL_AudioStream* stream = nullptr;
+    UAudioStream stream;
     Generator generator;
     unsigned samples_since_last_event = 0;
 };

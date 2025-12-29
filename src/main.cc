@@ -1,3 +1,6 @@
+#define SDL_MAIN_USE_CALLBACKS 1
+
+#include "app.h"
 #include "midi.h"
 #include "sound.h"
 #include "usb.h"
@@ -5,123 +8,20 @@
 #include <fmt/format.h>
 
 #include <SDL3/SDL.h>
-
-void ReadUSBPacket(libusb_transfer* transfer)
-{
-    auto* sound_ctx = static_cast<SoundContext*>(
-        static_cast<usb::DeviceHandle*>(transfer->user_data)->user_data
-    );
-
-    PlaybackUnit& live_playback = sound_ctx->live_playback;
-
-    SDL_AudioStream* stream = live_playback.stream;
-    midi::Player& player = live_playback.player;
-    Generator& generator = live_playback.generator;
-
-    int bytes_queued = SDL_GetAudioStreamQueued(stream);
-    if (bytes_queued == -1) {
-        fmt::print("Error inspecting audio stream: {}\n", SDL_GetError());
-        return;
-    }
-
-    size_t samples_queued = static_cast<size_t>(bytes_queued) / sizeof(Sample);
-
-    bool should_clear_stream = false;
-
-    {
-    std::lock_guard<std::mutex> guard(sound_ctx->lock);
-    for (int i = 0; i < transfer->actual_length; i += midi::MESSAGE_SIZE) {
-        auto* message = static_cast<uint8_t*>(transfer->buffer + i);
-
-        auto cin = static_cast<midi::CodeIndexNumber>(message[0] & 0x0F);
-
-        switch (cin) {
-        case midi::CodeIndexNumber::NOTE_ON:
-            player.PlayEvent(midi::Event {
-                .type = midi::EventType::NOTE_ON,
-                .note_event = {
-                    .note = message[2],
-                    .velocity = message[3]
-                }
-            });
-            should_clear_stream = true;
-            break;
-        case midi::CodeIndexNumber::NOTE_OFF:
-            player.PlayEvent(midi::Event {
-                .type = midi::EventType::NOTE_OFF,
-                .note_event = {
-                    .note = message[2]
-                }
-            });
-            should_clear_stream = true;
-            break;
-        default:
-            break;
-        }
-    }
-    }
-
-    generator.sample_point_ -= samples_queued;
-
-    if (should_clear_stream)
-        SDL_ClearAudioStream(stream);
-}
+#include <SDL3/SDL_main.h>
 
 constexpr int SAMPLE_RATE = 64000;
 
-auto LivePlayback(SoundContext& ctx) -> tb::result<usb::DeviceHandle, usb::Error>
-{
-    if (auto result = usb::Init(); result.is_error()) {
-        fmt::print("Failed to initialise libusb: {}\n", result.get_error().What());
-        return result.get_error();
-    };
-
-    auto list_or_err = usb::IndexDevices();
-    if (list_or_err.is_error()) {
-        fmt::print("Failed to index USB devices: {}\n",
-            list_or_err.get_error().What());
-        return list_or_err.get_error();
-    }
-
-    fmt::print("Indexed USB devices\n");
-    auto devs_or_err = usb::SearchMIDIDevices(list_or_err.get_unchecked());
-    if (devs_or_err.is_error()) {
-        fmt::print("Failed to search for midi devices: {}\n",
-            devs_or_err.get_error().What());
-        return devs_or_err.get_error();
-    }
-
-    const std::vector<usb::DeviceEntry>& entries = devs_or_err.get_unchecked();
-    fmt::print("Found {} midi devices\n", entries.size());
-
-    usb::DeviceHandle handle;
-
-    if (entries.empty()) {
-        fmt::print("No MIDI devices found\n");
-        return usb::Error { LIBUSB_ERROR_NO_DEVICE };
-    }
-
-    const usb::DeviceEntry& entry = entries[0];
-    fmt::print("Device '{}' from '{}'\n", entry.product_name,
-                entry.manufacturer);
-
-    auto handle_or_err = entry.Open(&ctx);
-    if (handle_or_err.is_error()) {
-        fmt::print("Error opening MIDI device for IO: {}\n",
-            handle_or_err.get_error().What());
-        return handle_or_err.get_error();
-    }
-
-    handle = std::move(handle_or_err.get_mut_unchecked());
-
-    return handle;
-}
-
-int main(int argc, char** argv)
+SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
 {
     if (!SDL_Init(SDL_INIT_AUDIO)) {
-        fmt::print("Failed to initialise SDL\n");
-        return 1;
+        fmt::print("Failed to initialise SDL: {}\n", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    if (auto result = usb::Init(); result.is_error()) {
+        fmt::print("Failed to initialise libusb: {}\n", result.get_error().What());
+        return SDL_APP_FAILURE;
     }
 
     SDL_AudioSpec spec = {
@@ -130,69 +30,83 @@ int main(int argc, char** argv)
         .freq = SAMPLE_RATE
     };
 
-    SoundContext ctx = {
-        .live_playback {
-            .player { midi::PlayerMode::LIVE_PLAYBACK },
-            .generator { spec.freq }
-        },
-        .file_playback {
-            .player { midi::PlayerMode::FILE_PLAYBACK },
-            .generator { spec.freq }
+    AppContext* ctx = new AppContext {
+        .sound_ctx = {
+            .live_playback {
+                .player { midi::PlayerMode::LIVE_PLAYBACK },
+                .generator { spec.freq },
+                .stream {
+                }
+            },
+            .file_playback {
+                .player { midi::PlayerMode::FILE_PLAYBACK },
+                .generator { spec.freq },
+                .stream {
+                }
+            }
         }
     };
 
-    ctx.live_playback.stream
-        = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec,
-            Audio_LiveCallback, &ctx);
-    ctx.file_playback.stream
-        = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec,
-            Audio_FileCallback, &ctx);
+    *appstate = ctx;
+    SoundContext& sound_ctx = ctx->sound_ctx;
 
-    if (!ctx.live_playback.stream || !ctx.file_playback.stream) {
+    sound_ctx.live_playback.stream.reset(
+        SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+            &spec, Audio_LiveCallback, &sound_ctx)
+    );
+    sound_ctx.file_playback.stream.reset(
+        SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+            &spec, Audio_FileCallback, &sound_ctx)
+    );
+
+    if (!sound_ctx.live_playback.stream || !sound_ctx.file_playback.stream) {
         fmt::print("Failed to open audio streams: {}\n", SDL_GetError());
-        return 1;
+        return SDL_APP_FAILURE;
     }
 
-    tb::scoped_guard clean_up = [&ctx] {
-        SDL_DestroyAudioStream(ctx.live_playback.stream);
-        SDL_DestroyAudioStream(ctx.file_playback.stream);
-    };
-
-    auto handle_or_err = LivePlayback(ctx);
-    tb::scoped_guard close_usb = [&handle_or_err] {
-        if (handle_or_err.is_ok())
-            handle_or_err.get_mut_unchecked().Close();
-        usb::Exit();
-    };
-
-    if (handle_or_err.is_error() && argc < 2) {
+    if (auto result = ctx->SetupMIDIControllerConnection();
+        result.is_error() && argc < 2) {
         fmt::print("Couldn't find device for live MIDI playback - exiting\n");
-        return 1;
+        return SDL_APP_FAILURE;
     }
 
-    if (handle_or_err.is_ok()) {
-        handle_or_err.get_mut_unchecked().ReceiveBulkPackets(ReadUSBPacket);
-        SDL_ResumeAudioStreamDevice(ctx.live_playback.stream);
-    }
+    if (ctx->device_handle.dev_handle)
+        SDL_ResumeAudioStreamDevice(sound_ctx.live_playback.stream.get());
 
-    midi::MIDI midi;
     if (argc >= 2) {
-        auto result = midi::MIDI::FromFile(argv[1]);
-        if (result.is_error()) {
-            midi::Error e = result.get_error();
-            fmt::print("MIDI error at pos {}: {}\n", e.byte_position, e.What());
-            return 1;
+        if (auto result = ctx->LoadMIDIFile(argv[1]); result.is_error()) {
+            midi::Error err = result.get_error();
+            fmt::print("Failed to load MIDI: Error at byte {}: {}\n",
+                err.byte_position, err.What());
+            return SDL_APP_FAILURE;
         }
-
-        midi = std::move(result.get_mut_unchecked());
-        ctx.file_playback.player.SetMIDI(midi);
-        fmt::print("Loaded MIDI\n");
-
-        SDL_ResumeAudioStreamDevice(ctx.file_playback.stream);
+        SDL_ResumeAudioStreamDevice(sound_ctx.file_playback.stream.get());
     }
 
-    usb::PollingContext polling_ctx {};
-    getchar();
+    fmt::print("Press Q to quit\n");
 
-    return 0;
+    return SDL_APP_CONTINUE;
+}
+
+void SDL_AppQuit(void* appstate, SDL_AppResult result)
+{
+    auto* ctx = static_cast<AppContext*>(appstate);
+
+    ctx->device_handle.Close();
+    delete ctx;
+    usb::Exit();
+}
+
+SDL_AppResult SDL_AppIterate(void* appstate)
+{
+    int c = getchar();
+    if (c == EOF || c == 'q' || c == 'Q')
+        return SDL_APP_SUCCESS;
+
+    return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
+{
+    return SDL_APP_CONTINUE;
 }

@@ -1,0 +1,120 @@
+#include "app.h"
+
+#include <fmt/format.h>
+
+void ReadUSBPacket(libusb_transfer* transfer)
+{
+    auto* sound_ctx = static_cast<SoundContext*>(
+        static_cast<usb::DeviceHandle*>(transfer->user_data)->user_data
+    );
+
+    PlaybackUnit& live_playback = sound_ctx->live_playback;
+
+    SDL_AudioStream* stream = live_playback.stream.get();
+    midi::Player& player = live_playback.player;
+    Generator& generator = live_playback.generator;
+
+    int bytes_queued = SDL_GetAudioStreamQueued(stream);
+    if (bytes_queued == -1) {
+        fmt::print("Error inspecting audio stream: {}\n", SDL_GetError());
+        return;
+    }
+
+    size_t samples_queued = static_cast<size_t>(bytes_queued) / sizeof(Sample);
+
+    bool should_clear_stream = false;
+
+    {
+    std::lock_guard<std::mutex> guard(sound_ctx->lock);
+    for (int i = 0; i < transfer->actual_length; i += midi::MESSAGE_SIZE) {
+        auto* message = static_cast<uint8_t*>(transfer->buffer + i);
+
+        auto cin = static_cast<midi::CodeIndexNumber>(message[0] & 0x0F);
+
+        switch (cin) {
+        case midi::CodeIndexNumber::NOTE_ON:
+            player.PlayEvent(midi::Event {
+                .type = midi::EventType::NOTE_ON,
+                .note_event = {
+                    .note = message[2],
+                    .velocity = message[3]
+                }
+            });
+            should_clear_stream = true;
+            break;
+        case midi::CodeIndexNumber::NOTE_OFF:
+            player.PlayEvent(midi::Event {
+                .type = midi::EventType::NOTE_OFF,
+                .note_event = {
+                    .note = message[2]
+                }
+            });
+            should_clear_stream = true;
+            break;
+        default:
+            break;
+        }
+    }
+    }
+
+    generator.sample_point_ -= samples_queued;
+
+    if (should_clear_stream)
+        SDL_ClearAudioStream(stream);
+}
+
+auto AppContext::SetupMIDIControllerConnection() -> tb::error<usb::Error>
+{
+    auto list_or_err = usb::IndexDevices();
+    if (list_or_err.is_error()) {
+        fmt::print("Failed to index USB devices: {}\n",
+            list_or_err.get_error().What());
+        return list_or_err.get_error();
+    }
+
+    fmt::print("Indexed USB devices\n");
+    auto devs_or_err = usb::SearchMIDIDevices(list_or_err.get_unchecked());
+    if (devs_or_err.is_error()) {
+        fmt::print("Failed to search for midi devices: {}\n",
+            devs_or_err.get_error().What());
+        return devs_or_err.get_error();
+    }
+
+    const std::vector<usb::DeviceEntry>& entries = devs_or_err.get_unchecked();
+    fmt::print("Found {} midi devices\n", entries.size());
+
+    usb::DeviceHandle handle;
+
+    if (entries.empty()) {
+        fmt::print("No MIDI devices found\n");
+        return usb::Error { LIBUSB_ERROR_NO_DEVICE };
+    }
+
+    const usb::DeviceEntry& entry = entries[0];
+    fmt::print("Device '{}' from '{}'\n", entry.product_name,
+                entry.manufacturer);
+
+    auto handle_or_err = entry.Open(this);
+    if (handle_or_err.is_error()) {
+        fmt::print("Error opening MIDI device for IO: {}\n",
+            handle_or_err.get_error().What());
+        return handle_or_err.get_error();
+    }
+
+    device_handle = std::move(handle_or_err.get_mut_unchecked());
+    device_handle.ReceiveBulkPackets(ReadUSBPacket);
+
+    return tb::ok;
+}
+
+auto AppContext::LoadMIDIFile(std::string_view path) -> tb::error<midi::Error>
+{
+    auto result = midi::MIDI::FromFile(path);
+    if (result.is_error())
+        return result.get_error();
+
+    midi_file = std::move(result.get_mut_unchecked());
+    sound_ctx.file_playback.player.SetMIDI(midi_file);
+
+    return tb::ok;
+}
