@@ -12,7 +12,7 @@ void ReadUSBPacket(libusb_transfer* transfer)
         static_cast<usb::DeviceHandle*>(transfer->user_data)->user_data
     );
 
-    auto& live_playback = static_cast<PlaybackUnit&>(sound_ctx->live_playback);
+    PlaybackUnit& live_playback = sound_ctx->live_playback;
 
     SDL_AudioStream* stream = live_playback.stream;
     midi::Player& player = live_playback.player;

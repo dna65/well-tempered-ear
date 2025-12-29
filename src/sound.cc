@@ -83,7 +83,7 @@ void Audio_LiveCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
     if (additional_amount < 1) return;
 
     auto* sound_ctx = static_cast<SoundContext*>(ctx);
-    auto& playback_unit = static_cast<PlaybackUnit&>(sound_ctx->live_playback);
+    PlaybackUnit& playback_unit = sound_ctx->live_playback;
 
     Generator& generator = playback_unit.generator;
     midi::Player& live_player = playback_unit.player;
@@ -103,7 +103,7 @@ void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
     if (additional_amount < 1) return;
 
     auto* sound_ctx = static_cast<SoundContext*>(ctx);
-    auto& playback_unit = static_cast<PlaybackUnit&>(sound_ctx->file_playback);
+    PlaybackUnit& playback_unit = sound_ctx->file_playback;
 
     Generator& generator = playback_unit.generator;
     midi::Player& file_player = playback_unit.player;
