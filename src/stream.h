@@ -14,6 +14,9 @@ struct Stream;
 template<typename T>
 auto TypedRead(Stream& stream) -> tb::result<T, StreamError>;
 
+template<typename T>
+auto TypedRead(tb::type_tag_t<T>, Stream& stream) -> tb::result<T, StreamError>;
+
 struct Stream
 {
     FILE* file_ = nullptr;
@@ -59,7 +62,8 @@ struct Stream
         StreamError error;
         for (size_t i = 0; i < sizeof...(Ts); ++i) {
             tb::visit_tuple(result, i, [&] (auto& elem) {
-                auto result = TypedRead<std::remove_reference_t<decltype(elem)>>(*this);
+                using ElementType = std::remove_reference_t<decltype(elem)>;
+                auto result = TypedRead(tb::type_tag<ElementType>, *this);
                 if (result.is_error()) {
                     error = result.get_error();
                     okay = false;
@@ -91,4 +95,10 @@ auto TypedRead(Stream& stream) -> tb::result<T, StreamError>
         return StreamError::FILE_ERROR;
 
     return result;
+}
+
+template<typename T>
+auto TypedRead(tb::type_tag_t<T>, Stream& stream) -> tb::result<T, StreamError>
+{
+    return TypedRead<T>(stream);
 }
