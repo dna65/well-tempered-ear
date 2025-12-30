@@ -268,7 +268,7 @@ auto Player::Advance() -> tb::error<EndOfMIDIError>
                 info.done = true;
                 break;
             case MetaType::TEMPO:
-                delta_per_second_ = 1.f /
+                ticks_per_second_ = 1.f /
                     (next_ev.usec_per_quarter_note
                     / midi_ptr_->tick_division_
                     / 1000000.f);
@@ -289,7 +289,7 @@ auto Player::Advance() -> tb::error<EndOfMIDIError>
 void Player::PlayEvent(const Event& event)
 {
     Seconds time_diff = Clock::now() - start_time_;
-    ticks_elapsed_ = delta_per_second_ * time_diff.count();
+    ticks_elapsed_ = ticks_per_second_ * time_diff.count();
     switch (event.type) {
     case EventType::NOTE_ON:
         notes_.emplace(event.note_event.note, NoteInfo {
@@ -341,14 +341,14 @@ auto Player::GetTicksElapsed() const -> Ticks
 {
     if (mode_ == PlayerMode::LIVE_PLAYBACK) {
         Seconds time_diff = Clock::now() - start_time_;
-        return delta_per_second_ * time_diff.count();
+        return ticks_per_second_ * time_diff.count();
     }
     return ticks_elapsed_;
 }
 
-auto Player::GetDeltaPerSecond() const -> float
+auto Player::GetTicksPerSecond() const -> float
 {
-    return delta_per_second_;
+    return ticks_per_second_;
 }
 
 }

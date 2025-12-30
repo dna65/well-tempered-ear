@@ -176,7 +176,7 @@ public:
     auto TicksUntilNextEvent() const -> std::optional<Ticks>;
     auto GetCurrentNotes() const -> const NoteMap&;
     auto GetTicksElapsed() const -> Ticks;
-    auto GetDeltaPerSecond() const -> float;
+    auto GetTicksPerSecond() const -> float;
     void SetMIDI(const MIDI& midi);
 
 private:
@@ -189,7 +189,7 @@ private:
     const MIDI* midi_ptr_ = nullptr;
     TimePoint start_time_ = Clock::now();
     Ticks ticks_elapsed_ = 0;
-    float delta_per_second_ = 960.f;
+    float ticks_per_second_ = 960.f;
 public:
     PlayerMode mode_;
     uint8_t transposition_offset_ = 0;

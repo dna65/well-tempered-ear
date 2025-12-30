@@ -53,10 +53,10 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
         sample_point_ = start_point;
         float initial_ticks_diff
             = current_time - info.time
-            + (sample_offset * midi_status.GetDeltaPerSecond() / sample_rate_);
+            + (sample_offset * midi_status.GetTicksPerSecond() / sample_rate_);
         float decay = std::clamp(
             powf(2, initial_ticks_diff * decay_constant
-                    / (-1.f * midi_status.GetDeltaPerSecond())),
+                    / (-1.f * midi_status.GetTicksPerSecond())),
             -1.f, 1.f
         );
 
@@ -112,14 +112,14 @@ void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
 
     std::ranges::fill(sample_buffer, Sample {});
 
-    float samples_per_tick = generator.sample_rate_ / file_player.GetDeltaPerSecond();
+    float samples_per_tick = generator.sample_rate_ / file_player.GetTicksPerSecond();
     size_t samples = 0;
 
     while (samples < static_cast<size_t>(additional_amount)) {
         std::optional<midi::Ticks> ticks = file_player.TicksUntilNextEvent();
         if (!ticks) break;
 
-        samples_per_tick = generator.sample_rate_ / file_player.GetDeltaPerSecond();
+        samples_per_tick = generator.sample_rate_ / file_player.GetTicksPerSecond();
         std::span<Sample> sample_buffer_range {
             sample_buffer.begin() + samples,
             sample_buffer.end()
