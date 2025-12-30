@@ -222,4 +222,28 @@ struct deleter
     constexpr void operator()(auto* ptr) { Deleter(ptr); }
 };
 
+template<typename E>
+concept Enum = std::is_enum_v<E>;
+
+template<Enum E>
+constexpr auto enum_names = std::to_array<std::string_view>({ "" });
+
+template<Enum E>
+constexpr auto longest_enum_name = [] () -> size_t {
+    size_t longest {};
+    for (auto name : enum_names<E>)
+        if (name.size() > longest) longest = name.size();
+
+    return longest;
+}();
+
+template<Enum E>
+constexpr auto string_to_enum = [] (std::string_view str) -> std::optional<E> {
+    auto it = std::ranges::find(enum_names<E>, str);
+    if (it == enum_names<E>.end())
+        return std::nullopt;
+
+    return static_cast<E>(it - enum_names<E>.begin());
+};
+
 } // namespace tb
