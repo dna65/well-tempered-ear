@@ -330,6 +330,7 @@ auto Player::GetCurrentNotes() const -> const NoteMap&
 
 void Player::SetMIDI(const MIDI& midi)
 {
+    ticks_elapsed_ = 0;
     midi_ptr_ = &midi;
     tracks_.clear();
     for (const Track& track : midi.tracks_) {
