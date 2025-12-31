@@ -16,7 +16,7 @@ constexpr int SAMPLE_RATE = 64000;
 
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
 {
-    if (!SDL_Init(SDL_INIT_AUDIO)) {
+    if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
         fmt::print("Failed to initialise SDL: {}\n", SDL_GetError());
         return SDL_APP_FAILURE;
     }
@@ -42,8 +42,14 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
                 .player { midi::PlayerMode::FILE_PLAYBACK },
                 .generator { spec.freq },
             }
-        }
+        },
+        .window = SDL_CreateWindow("The Well Tempered Ear", 800, 600, 0)
     };
+
+    if (ctx->window == nullptr) {
+        fmt::print("Failed to create window: {}\n", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
 
     *appstate = ctx;
     SoundContext& sound_ctx = ctx->sound_ctx;
@@ -95,6 +101,11 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
 
     SDL_ResumeAudioStreamDevice(sound_ctx.file_playback.stream.get());
 
+    SDL_SetEventEnabled(SDL_EVENT_MOUSE_MOTION, false);
+    // Disable all window-related SDL events
+    for (uint32_t event_type = 0x200; event_type < 0x300; ++event_type)
+        SDL_SetEventEnabled(event_type, false);
+
     fmt::print("Press Q to quit\n");
 
     return SDL_APP_CONTINUE;
@@ -111,14 +122,31 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result)
 
 SDL_AppResult SDL_AppIterate(void* appstate)
 {
-    int c = getchar();
-    if (c == EOF || c == 'q' || c == 'Q')
-        return SDL_APP_SUCCESS;
+    constexpr uint64_t MS_PER_FRAME = 1000 / 30;
+    static uint64_t ms_elapsed = SDL_GetTicks();
 
+    uint64_t time_diff = SDL_GetTicks() - ms_elapsed;
+    if (time_diff < MS_PER_FRAME)
+        SDL_Delay(MS_PER_FRAME - time_diff);
+
+    ms_elapsed = SDL_GetTicks();
     return SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 {
+    switch (event->type) {
+    case SDL_EVENT_QUIT:
+        return SDL_APP_SUCCESS;
+    case SDL_EVENT_KEY_DOWN: {
+        auto* ev = reinterpret_cast<SDL_KeyboardEvent*>(event);
+        if (ev->key == SDLK_Q)
+            return SDL_APP_SUCCESS;
+        break;
+    }
+    default:
+        break;
+    }
+
     return SDL_APP_CONTINUE;
 }

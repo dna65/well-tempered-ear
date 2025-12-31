@@ -6,6 +6,8 @@
 #include "tb.h"
 #include "usb.h"
 
+#include <SDL3/SDL_video.h>
+
 struct AppContext
 {
     SoundContext sound_ctx;
@@ -13,9 +15,8 @@ struct AppContext
     usb::DeviceHandle device_handle;
     midi::MIDI midi_file;
     usb::PollingContext polling_ctx {};
+    SDL_Window* window;
 
     auto SetupMIDIControllerConnection() -> tb::error<usb::Error>;
     auto LoadMIDIFile(std::string_view path) -> tb::error<midi::Error>;
 };
-
-
