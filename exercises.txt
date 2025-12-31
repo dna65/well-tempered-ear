@@ -1,0 +1,14 @@
+midis/exercises/sv1.mid
+    single_voice_transcription
+    major
+    easy
+
+midis/exercises/sv2.mid
+    single_voice_transcription
+    major
+    medium
+
+midis/exercises/sv3.mid
+    single_voice_transcription
+    minor
+    hard
