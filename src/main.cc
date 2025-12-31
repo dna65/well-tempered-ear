@@ -10,6 +10,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
+#include <random>
+
 constexpr int SAMPLE_RATE = 64000;
 
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
@@ -35,14 +37,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
             .live_playback {
                 .player { midi::PlayerMode::LIVE_PLAYBACK },
                 .generator { spec.freq },
-                .stream {
-                }
             },
             .file_playback {
                 .player { midi::PlayerMode::FILE_PLAYBACK },
                 .generator { spec.freq },
-                .stream {
-                }
             }
         }
     };
@@ -64,24 +62,38 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         return SDL_APP_FAILURE;
     }
 
-    if (auto result = ctx->SetupMIDIControllerConnection();
-        result.is_error() && argc < 2) {
-        fmt::print("Couldn't find device for live MIDI playback - exiting\n");
-        return SDL_APP_FAILURE;
+    if (auto result = ctx->SetupMIDIControllerConnection(); result.is_error()) {
+        fmt::print("Couldn't find device for live MIDI playback\n");
     }
 
     if (ctx->device_handle.dev_handle)
         SDL_ResumeAudioStreamDevice(sound_ctx.live_playback.stream.get());
 
-    if (argc >= 2) {
-        if (auto result = ctx->LoadMIDIFile(argv[1]); result.is_error()) {
-            midi::Error err = result.get_error();
-            fmt::print("Failed to load MIDI: Error at byte {}: {}\n",
-                err.byte_position, err.What());
-            return SDL_APP_FAILURE;
-        }
-        SDL_ResumeAudioStreamDevice(sound_ctx.file_playback.stream.get());
+    std::string_view exercises_file_path = argc >= 2 ? argv[1] : "exercises.txt";
+
+    if (auto result = ctx->game.LoadExercises(exercises_file_path); result.is_error()) {
+        LoadError err = result.get_error();
+        fmt::print("Failed to load exercises: {}\n", err.What());
+        return SDL_APP_FAILURE;
     }
+
+    if (auto result = ctx->game.LoadCadences(
+            "midis/cadences/major.mid",
+            "midis/cadences/minor.mid"
+        ); result.is_error()) {
+        midi::Error err = result.get_error();
+        fmt::print("Failed to load cadence midi files: {}\n", err.What());
+        return SDL_APP_FAILURE;
+    }
+
+    ctx->game.BeginNewExercise().ignore_error();
+
+    std::random_device rd;
+    std::uniform_int_distribution<int> dr(-6, 6);
+    sound_ctx.file_playback.player.transposition_offset_ = dr(rd);
+    sound_ctx.file_playback.player.SetMIDI(ctx->game.GetCurrentExercise()->midi);
+
+    SDL_ResumeAudioStreamDevice(sound_ctx.file_playback.stream.get());
 
     fmt::print("Press Q to quit\n");
 

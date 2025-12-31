@@ -1,5 +1,6 @@
 #pragma once
 
+#include "game.h"
 #include "midi.h"
 #include "sound.h"
 #include "tb.h"
@@ -8,6 +9,7 @@
 struct AppContext
 {
     SoundContext sound_ctx;
+    Game game;
     usb::DeviceHandle device_handle;
     midi::MIDI midi_file;
     usb::PollingContext polling_ctx {};
