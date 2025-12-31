@@ -1,6 +1,7 @@
 #define SDL_MAIN_USE_CALLBACKS 1
 
 #include "app.h"
+#include "events.h"
 #include "midi.h"
 #include "sound.h"
 #include "usb.h"
@@ -146,6 +147,10 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     }
     default:
         break;
+    }
+
+    if (event->type == EventType<MIDIPlayerEndEvent>()) {
+        // TODO: Game logic
     }
 
     return SDL_APP_CONTINUE;

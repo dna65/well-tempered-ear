@@ -1,5 +1,7 @@
 #include "sound.h"
 
+#include "events.h"
+
 #include <algorithm>
 
 constexpr float C_MINUS_2_A440 = 8.175f;
@@ -141,6 +143,11 @@ void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
 
         if (file_player.Advance().is_error())
             break;
+
+        if (file_player.Done()) {
+            MIDIPlayerEndEvent ev {};
+            SDL_PushEvent(reinterpret_cast<SDL_Event*>(&ev));
+        }
     }
 
     SDL_PutAudioStreamData(stream, sample_buffer.data(), samples * sizeof(Sample));
