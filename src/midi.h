@@ -178,6 +178,7 @@ public:
     auto GetTicksElapsed() const -> Ticks;
     auto GetTicksPerSecond() const -> float;
     void SetMIDI(const MIDI& midi);
+    auto Done() const -> bool;
 
 private:
     using Clock = std::chrono::high_resolution_clock;

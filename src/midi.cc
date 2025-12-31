@@ -352,4 +352,12 @@ auto Player::GetTicksPerSecond() const -> float
     return ticks_per_second_;
 }
 
+auto Player::Done() const -> bool
+{
+    for (auto& [track, info] : tracks_)
+        if (!info.done) return false;
+
+    return true;
+}
+
 }
