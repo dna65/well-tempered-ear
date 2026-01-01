@@ -72,7 +72,6 @@ auto AppContext::SetupMIDIControllerConnection() -> tb::error<usb::Error>
         return list_or_err.get_error();
     }
 
-    fmt::print("Indexed USB devices\n");
     auto devs_or_err = usb::SearchMIDIDevices(list_or_err.get_unchecked());
     if (devs_or_err.is_error()) {
         fmt::print("Failed to search for midi devices: {}\n",
@@ -81,18 +80,12 @@ auto AppContext::SetupMIDIControllerConnection() -> tb::error<usb::Error>
     }
 
     const std::vector<usb::DeviceEntry>& entries = devs_or_err.get_unchecked();
-    fmt::print("Found {} midi devices\n", entries.size());
-
     usb::DeviceHandle handle;
 
-    if (entries.empty()) {
-        fmt::print("No MIDI devices found\n");
+    if (entries.empty())
         return usb::Error { LIBUSB_ERROR_NO_DEVICE };
-    }
 
     const usb::DeviceEntry& entry = entries[0];
-    fmt::print("Device '{}' from '{}'\n", entry.product_name,
-                entry.manufacturer);
 
     auto handle_or_err = entry.Open(this);
     if (handle_or_err.is_error()) {
