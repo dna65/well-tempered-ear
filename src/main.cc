@@ -155,8 +155,11 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         // TODO: Game logic
     } else if (event->type == EventType<MIDIInputEvent>()) {
         auto* ev = reinterpret_cast<MIDIInputEvent*>(event);
+
         if (ev->type == midi::EventType::NOTE_ON)
             ctx->game.InputNote(ev->note);
+
+        ctx->PlayLiveMIDIEvent(*ev);
     }
 
     return SDL_APP_CONTINUE;

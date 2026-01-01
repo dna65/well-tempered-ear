@@ -1,5 +1,6 @@
 #pragma once
 
+#include "events.h"
 #include "game.h"
 #include "midi.h"
 #include "sound.h"
@@ -19,4 +20,5 @@ struct AppContext
 
     auto SetupMIDIControllerConnection() -> tb::error<usb::Error>;
     auto LoadMIDIFile(std::string_view path) -> tb::error<midi::Error>;
+    void PlayLiveMIDIEvent(const MIDIInputEvent& event);
 };

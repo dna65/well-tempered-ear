@@ -6,28 +6,6 @@
 
 void ReadUSBPacket(libusb_transfer* transfer)
 {
-    auto* sound_ctx = static_cast<SoundContext*>(
-        static_cast<usb::DeviceHandle*>(transfer->user_data)->user_data
-    );
-
-    PlaybackUnit& live_playback = sound_ctx->live_playback;
-
-    SDL_AudioStream* stream = live_playback.stream.get();
-    midi::Player& player = live_playback.player;
-    Generator& generator = live_playback.generator;
-
-    int bytes_queued = SDL_GetAudioStreamQueued(stream);
-    if (bytes_queued == -1) {
-        fmt::print("Error inspecting audio stream: {}\n", SDL_GetError());
-        return;
-    }
-
-    size_t samples_queued = static_cast<size_t>(bytes_queued) / sizeof(Sample);
-
-    bool should_clear_stream = false;
-
-    {
-    std::lock_guard<std::mutex> guard(sound_ctx->lock);
     for (int i = 0; i < transfer->actual_length; i += midi::MESSAGE_SIZE) {
         auto* message = static_cast<uint8_t*>(transfer->buffer + i);
 
@@ -41,14 +19,6 @@ void ReadUSBPacket(libusb_transfer* transfer)
                 .velocity = message[3]
             };
             SDL_PushEvent(reinterpret_cast<SDL_Event*>(&ev));
-            player.PlayEvent(midi::Event {
-                .type = midi::EventType::NOTE_ON,
-                .note_event = {
-                    .note = message[2],
-                    .velocity = message[3]
-                }
-            });
-            should_clear_stream = true;
             break;
         }
         case midi::CodeIndexNumber::NOTE_OFF: {
@@ -57,25 +27,12 @@ void ReadUSBPacket(libusb_transfer* transfer)
                 .note = message[2]
             };
             SDL_PushEvent(reinterpret_cast<SDL_Event*>(&ev));
-            player.PlayEvent(midi::Event {
-                .type = midi::EventType::NOTE_OFF,
-                .note_event = {
-                    .note = message[2]
-                }
-            });
-            should_clear_stream = true;
             break;
         }
         default:
             break;
         }
     }
-    }
-
-    generator.sample_point_ -= samples_queued;
-
-    if (should_clear_stream)
-        SDL_ClearAudioStream(stream);
 }
 
 auto AppContext::SetupMIDIControllerConnection() -> tb::error<usb::Error>
@@ -125,4 +82,33 @@ auto AppContext::LoadMIDIFile(std::string_view path) -> tb::error<midi::Error>
     sound_ctx.file_playback.player.SetMIDI(midi_file);
 
     return tb::ok;
+}
+
+void AppContext::PlayLiveMIDIEvent(const MIDIInputEvent& event)
+{
+    SDL_AudioStream* stream = sound_ctx.live_playback.stream.get();
+    midi::Player& player = sound_ctx.live_playback.player;
+    Generator& generator = sound_ctx.live_playback.generator;
+
+    int bytes_queued = SDL_GetAudioStreamQueued(stream);
+    if (bytes_queued == -1) {
+        fmt::print("Error inspecting audio stream: {}\n", SDL_GetError());
+        return;
+    }
+
+    size_t samples_queued = static_cast<size_t>(bytes_queued) / sizeof(Sample);
+
+    SDL_ClearAudioStream(stream);
+
+    std::lock_guard<std::mutex> guard(sound_ctx.lock);
+
+    player.PlayEvent({
+        .type = event.type,
+        .note_event {
+            .note = event.note,
+            .velocity = event.velocity
+        }
+    });
+
+    generator.sample_point_ -= samples_queued;
 }

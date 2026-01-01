@@ -3,6 +3,8 @@
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_timer.h>
 
+#include "midi.h"
+
 template<typename T>
 auto EventType() -> uint32_t
 {
