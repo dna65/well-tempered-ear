@@ -2,6 +2,8 @@
 
 #include <fmt/format.h>
 
+#include "events.h"
+
 void ReadUSBPacket(libusb_transfer* transfer)
 {
     auto* sound_ctx = static_cast<SoundContext*>(
@@ -32,7 +34,13 @@ void ReadUSBPacket(libusb_transfer* transfer)
         auto cin = static_cast<midi::CodeIndexNumber>(message[0] & 0x0F);
 
         switch (cin) {
-        case midi::CodeIndexNumber::NOTE_ON:
+        case midi::CodeIndexNumber::NOTE_ON: {
+            MIDIInputEvent ev {
+                .type = midi::EventType::NOTE_ON,
+                .note = message[2],
+                .velocity = message[3]
+            };
+            SDL_PushEvent(reinterpret_cast<SDL_Event*>(&ev));
             player.PlayEvent(midi::Event {
                 .type = midi::EventType::NOTE_ON,
                 .note_event = {
@@ -42,7 +50,13 @@ void ReadUSBPacket(libusb_transfer* transfer)
             });
             should_clear_stream = true;
             break;
-        case midi::CodeIndexNumber::NOTE_OFF:
+        }
+        case midi::CodeIndexNumber::NOTE_OFF: {
+            MIDIInputEvent ev {
+                .type = midi::EventType::NOTE_OFF,
+                .note = message[2]
+            };
+            SDL_PushEvent(reinterpret_cast<SDL_Event*>(&ev));
             player.PlayEvent(midi::Event {
                 .type = midi::EventType::NOTE_OFF,
                 .note_event = {
@@ -51,6 +65,7 @@ void ReadUSBPacket(libusb_transfer* transfer)
             });
             should_clear_stream = true;
             break;
+        }
         default:
             break;
         }

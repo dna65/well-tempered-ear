@@ -22,6 +22,7 @@ auto BaseEvent() -> SDL_CommonEvent
 struct MIDIInputEvent
 {
     SDL_CommonEvent base_event = BaseEvent<MIDIInputEvent>();
+    midi::EventType type;
     uint8_t note, velocity, channel;
 };
 

@@ -136,6 +136,8 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 {
+    auto* ctx = static_cast<AppContext*>(appstate);
+
     switch (event->type) {
     case SDL_EVENT_QUIT:
         return SDL_APP_SUCCESS;
@@ -151,6 +153,10 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 
     if (event->type == EventType<MIDIPlayerEndEvent>()) {
         // TODO: Game logic
+    } else if (event->type == EventType<MIDIInputEvent>()) {
+        auto* ev = reinterpret_cast<MIDIInputEvent*>(event);
+        if (ev->type == midi::EventType::NOTE_ON)
+            ctx->game.InputNote(ev->note);
     }
 
     return SDL_APP_CONTINUE;
