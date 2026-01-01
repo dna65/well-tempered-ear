@@ -334,7 +334,7 @@ void Player::SetMIDI(const MIDI& midi)
     midi_ptr_ = &midi;
     tracks_.clear();
     for (const Track& track : midi.tracks_) {
-        tracks_.emplace_back(&track, PlaybackInfo {});
+        tracks_.emplace_back(&track, TrackInfo {});
     }
 }
 

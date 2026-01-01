@@ -125,7 +125,7 @@ struct Track
     }
 };
 
-struct PlaybackInfo
+struct TrackInfo
 {
     size_t current_event_index = -1;
     Ticks playback_ticks = 0;
@@ -186,7 +186,7 @@ private:
     using Seconds = std::chrono::duration<double>;
 
     NoteMap notes_;
-    std::vector<std::pair<const Track*, PlaybackInfo>> tracks_;
+    std::vector<std::pair<const Track*, TrackInfo>> tracks_;
     const MIDI* midi_ptr_ = nullptr;
     TimePoint start_time_ = Clock::now();
     Ticks ticks_elapsed_ = 0;
