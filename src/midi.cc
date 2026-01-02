@@ -268,10 +268,8 @@ auto Player::Advance() -> tb::error<EndOfMIDIError>
                 info.done = true;
                 break;
             case MetaType::TEMPO:
-                ticks_per_second_ = 1.f /
-                    (next_ev.usec_per_quarter_note
-                    / midi_ptr_->tick_division_
-                    / 1000000.f);
+                ticks_per_second_ = midi_ptr_->tick_division_ * 1000000.f
+                                  / next_ev.usec_per_quarter_note;
                 break;
             default:
                 break;
