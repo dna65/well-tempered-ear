@@ -59,7 +59,7 @@ auto AppContext::SetupMIDIControllerConnection() -> tb::error<usb::Error>
 
     const usb::DeviceEntry& entry = entries[0];
 
-    auto handle_or_err = entry.Open(this);
+    auto handle_or_err = entry.Open(nullptr);
     if (handle_or_err.is_error()) {
         fmt::print("Error opening MIDI device for IO: {}\n",
             handle_or_err.get_error().What());
