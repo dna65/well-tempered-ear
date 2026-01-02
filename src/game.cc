@@ -16,7 +16,7 @@ struct EnumName
 };
 
 template<size_t MAX_LENGTH, auto Predicate>
-auto TypedRead(tb::type_tag_t<Token<MAX_LENGTH, Predicate>>, Stream& stream)
+auto TypedRead(tb::type_tag_t<Token<MAX_LENGTH, Predicate>>, Stream stream)
 -> tb::result<Token<MAX_LENGTH, Predicate>, StreamError>
 {
     char c;
@@ -53,7 +53,7 @@ auto TypedRead(tb::type_tag_t<Token<MAX_LENGTH, Predicate>>, Stream& stream)
 }
 
 template<tb::Enum E>
-auto TypedRead(tb::type_tag_t<EnumName<E>>, Stream& stream)
+auto TypedRead(tb::type_tag_t<EnumName<E>>, Stream stream)
 -> tb::result<EnumName<E>, StreamError>
 {
     auto token = TypedRead(

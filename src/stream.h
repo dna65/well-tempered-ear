@@ -12,10 +12,10 @@ enum class StreamError
 struct Stream;
 
 template<typename T>
-auto TypedRead(Stream& stream) -> tb::result<T, StreamError>;
+auto TypedRead(Stream stream) -> tb::result<T, StreamError>;
 
 template<typename T>
-auto TypedRead(tb::type_tag_t<T>, Stream& stream) -> tb::result<T, StreamError>;
+auto TypedRead(tb::type_tag_t<T>, Stream stream) -> tb::result<T, StreamError>;
 
 struct Stream
 {
@@ -88,7 +88,7 @@ struct Stream
 };
 
 template<typename T> requires std::integral<T> || std::is_enum_v<T>
-auto TypedRead(Stream& stream) -> tb::result<T, StreamError>
+auto TypedRead(Stream stream) -> tb::result<T, StreamError>
 {
     T result;
     if (fread(&result, sizeof(T), 1, stream.file_) < 1)
@@ -98,7 +98,7 @@ auto TypedRead(Stream& stream) -> tb::result<T, StreamError>
 }
 
 template<typename T>
-auto TypedRead(tb::type_tag_t<T>, Stream& stream) -> tb::result<T, StreamError>
+auto TypedRead(tb::type_tag_t<T>, Stream stream) -> tb::result<T, StreamError>
 {
     return TypedRead<T>(stream);
 }

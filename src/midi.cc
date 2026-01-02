@@ -13,7 +13,7 @@ struct UInt24
 };
 
 template<>
-auto TypedRead(Stream& stream) -> tb::result<VariableLengthInt, StreamError>
+auto TypedRead(Stream stream) -> tb::result<VariableLengthInt, StreamError>
 {
     VariableLengthInt result = { 0 };
 
@@ -33,7 +33,7 @@ auto TypedRead(Stream& stream) -> tb::result<VariableLengthInt, StreamError>
 }
 
 template<>
-auto TypedRead(Stream& stream) -> tb::result<UInt24, StreamError>
+auto TypedRead(Stream stream) -> tb::result<UInt24, StreamError>
 {
     UInt24 result = { 0 };
 
