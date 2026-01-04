@@ -4,7 +4,6 @@
 #include <type_traits>
 #include <span>
 #include <ranges>
-#include <fmt/core.h>
 
 namespace tb
 {

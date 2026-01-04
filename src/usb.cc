@@ -1,5 +1,7 @@
 #include "usb.h"
 
+#include <fmt/core.h>
+
 namespace usb
 {
 
