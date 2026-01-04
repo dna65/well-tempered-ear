@@ -162,7 +162,7 @@ private:
     friend class Player;
     std::vector<Track> tracks_;
     Format format_;
-    uint16_t tick_division_;
+    uint16_t ticks_per_quarter_note_;
 };
 
 class Player

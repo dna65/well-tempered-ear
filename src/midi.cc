@@ -204,7 +204,7 @@ auto MIDI::FromStream(FILE* file) -> tb::result<MIDI, Error>
     midi.format_ = static_cast<Format>(format);
     midi.tracks_.reserve(track_count);
     // TODO: Handle tickdiv type = 1
-    midi.tick_division_ = tick_div & 0x7FFF;
+    midi.ticks_per_quarter_note_ = tick_div & 0x7FFF;
 
     for (size_t i = 0; i < track_count; ++i) {
         if (char chunk_type[4]; stream.ReadToArray(chunk_type, 4).is_error()
@@ -268,7 +268,7 @@ auto Player::Advance() -> tb::error<EndOfMIDIError>
                 info.done = true;
                 break;
             case MetaType::TEMPO:
-                ticks_per_second_ = midi_ptr_->tick_division_ * 1000000.f
+                ticks_per_second_ = midi_ptr_->ticks_per_quarter_note_ * 1000000.f
                                   / next_ev.usec_per_quarter_note;
                 break;
             default:
