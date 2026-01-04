@@ -62,14 +62,16 @@ auto MIDI::FromFile(std::string_view path) -> tb::result<MIDI, Error>
     return FromStream(file);
 }
 
-auto Track::FromStream(FILE* file) -> tb::result<Track, Error>
+auto Track::FromStream(FILE* file, uint32_t track_size) -> tb::result<Track, Error>
 {
     Stream stream(file);
 
     EventType running_type;
     Track track;
 
-    while (true) {
+    size_t start = stream.Position().get_unchecked();
+
+    while (stream.Position().get_unchecked() < start + track_size) {
         auto event_info = stream.Read(tb::type_tag<VariableLengthInt, EventType>);
         if (event_info.is_error())
             return Error {
@@ -93,15 +95,6 @@ auto Track::FromStream(FILE* file) -> tb::result<Track, Error>
 
             auto [meta_type, length] = meta_event_info.get_unchecked();
 
-            if (meta_type == MetaType::END_TRACK) {
-                track.events.push_back({
-                    .delta_time = delta.value,
-                    .type = EventType::META,
-                    .meta_type = MetaType::END_TRACK
-                });
-                break;
-            }
-
             switch (meta_type) {
             case MetaType::TEMPO: {
                 auto usec_per_quarter = stream.Read<UInt24>();
@@ -113,6 +106,14 @@ auto Track::FromStream(FILE* file) -> tb::result<Track, Error>
                     .type = EventType::META,
                     .meta_type = MetaType::TEMPO,
                     .usec_per_quarter_note = usec_per_quarter.get_unchecked().value
+                });
+                break;
+            }
+            case MetaType::END_TRACK: {
+                track.events.push_back({
+                    .delta_time = delta.value,
+                    .type = EventType::META,
+                    .meta_type = MetaType::END_TRACK
                 });
                 break;
             }
@@ -162,6 +163,9 @@ auto Track::FromStream(FILE* file) -> tb::result<Track, Error>
             }
         }
     }
+
+    if (!track.events.empty() && track.events.back().meta_type != MetaType::END_TRACK)
+        return Error { Error::MISSING_EVENT, stream.Position().get_unchecked() };
 
     return track;
 }
@@ -214,17 +218,16 @@ auto MIDI::FromStream(FILE* file) -> tb::result<MIDI, Error>
                 stream.Position().get_unchecked()
             };
 
-        // Chunk length, not needed
-        if (stream.Read<uint32_t>().is_error())
+        auto track_size = stream.Read<uint32_t>(to_native_endian);
+        if (track_size.is_error())
             return Error {
                 Error::MISSING_TRACK,
                 stream.Position().get_unchecked()
             };
 
-        auto track = Track::FromStream(file);
-        if (track.is_error()) {
+        auto track = Track::FromStream(file, track_size.get_unchecked());
+        if (track.is_error())
             return track.get_error();
-        }
 
         midi.tracks_.emplace_back(track.get_mut_unchecked());
     }

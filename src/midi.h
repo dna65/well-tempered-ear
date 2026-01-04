@@ -110,7 +110,7 @@ struct Track
 {
     std::vector<Event> events;
 
-    static auto FromStream(FILE* file) -> tb::result<Track, Error>;
+    static auto FromStream(FILE* file, uint32_t track_size) -> tb::result<Track, Error>;
 
     template<typename BackInsertable>
     void ToNoteSeries(BackInsertable& output) const

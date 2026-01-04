@@ -20,16 +20,13 @@ auto TypedRead(tb::type_tag_t<Token<MAX_LENGTH, Predicate>>, Stream stream)
 -> tb::result<Token<MAX_LENGTH, Predicate>, StreamError>
 {
     char c;
-    while (true) {
+    do {
         if (fread(&c, 1, 1, stream.file_) < 1)
             return StreamError { StreamError::FILE_ERROR };
+    } while (Predicate(c));
 
-        if (!Predicate(c)) {
-            if (ungetc(c, stream.file_) == EOF)
-                return StreamError { StreamError::FILE_ERROR };
-            break;
-        }
-    }
+    if (ungetc(c, stream.file_) == EOF)
+        return StreamError { StreamError::FILE_ERROR };
 
     Token<MAX_LENGTH, Predicate> result {};
 
@@ -57,7 +54,9 @@ auto TypedRead(tb::type_tag_t<EnumName<E>>, Stream stream)
 -> tb::result<EnumName<E>, StreamError>
 {
     auto token = TypedRead(
-        tb::type_tag<Token<tb::longest_enum_name<E> + 1, isspace>>, stream);
+        tb::type_tag<Token<tb::longest_enum_name<E> + 1, isspace>>,
+        stream
+    );
     if (token.is_error())
         return token.get_error();
 
@@ -96,7 +95,7 @@ auto Game::LoadExercises(std::string_view path) -> tb::error<LoadError>
 
     Stream stream(file);
 
-    while (true) {
+    while (!feof(file)) {
         auto result = stream.Read(tb::type_tag<
             Token<128, isspace>,
             EnumName<ExerciseType>,
@@ -108,7 +107,6 @@ auto Game::LoadExercises(std::string_view path) -> tb::error<LoadError>
             StreamError err = result.get_error();
             if (err != StreamError::FILE_ERROR)
                 return LoadError { LoadError::FORMAT_ERROR };
-
             break;
         }
 
