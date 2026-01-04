@@ -251,9 +251,13 @@ auto Player::Advance() -> tb::error<EndOfMIDIError>
         if (next_ev.delta_time > ticks.value() + info.playback_ticks) {
             info.playback_ticks += ticks.value();
             continue;
-        } else {
-            info.playback_ticks = 0;
         }
+
+        info.playback_ticks = 0;
+        ++info.current_event_index;
+
+        if (info.current_event_index >= track->events.size() - 1)
+            info.done = true;
 
         switch (next_ev.type) {
         case EventType::NOTE_ON:
@@ -281,7 +285,6 @@ auto Player::Advance() -> tb::error<EndOfMIDIError>
         default:
             break;
         }
-        ++info.current_event_index;
     }
 
     return tb::ok;

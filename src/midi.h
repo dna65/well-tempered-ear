@@ -125,9 +125,11 @@ struct Track
     }
 };
 
+constexpr size_t BEFORE_FIRST_EVENT = -1;
+
 struct TrackInfo
 {
-    size_t current_event_index = -1;
+    size_t current_event_index = BEFORE_FIRST_EVENT;
     Ticks playback_ticks = 0;
     bool done = false;
 };
