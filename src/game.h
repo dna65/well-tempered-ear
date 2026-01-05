@@ -40,7 +40,7 @@ struct LoadError
         EXERCISES_NOT_FOUND, FORMAT_ERROR, MIDI_NOT_FOUND, MIDI_ERROR
     } type;
 
-    constexpr auto What() -> std::string_view
+    constexpr auto What() const -> std::string_view
     {
         switch (type) {
         case EXERCISES_NOT_FOUND:
