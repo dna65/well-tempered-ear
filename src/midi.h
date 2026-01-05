@@ -59,6 +59,11 @@ enum class PlayerMode
     FILE_PLAYBACK, LIVE_PLAYBACK
 };
 
+enum class PitchClass
+{
+    C, C_SHARP, D, E_FLAT, E, F, F_SHARP, G, A_FLAT, A, B_FLAT, B
+};
+
 struct EndOfMIDIError {};
 
 struct Error
@@ -197,5 +202,18 @@ public:
     PlayerMode mode_;
     uint8_t transposition_offset_ = 0;
 };
+
+template<typename T> requires std::same_as<T, uint8_t> || std::same_as<T, PitchClass>
+constexpr auto NoteName(T note) -> std::string_view
+{
+    constexpr std::array<std::string_view, 12> NOTE_NAMES {
+        "C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"
+    };
+
+    if constexpr (std::same_as<T, PitchClass>)
+        return NOTE_NAMES[static_cast<uint8_t>(note)];
+    else
+        return NOTE_NAMES[note % 12];
+}
 
 }

@@ -93,13 +93,6 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         return SDL_APP_FAILURE;
     }
 
-    ctx->game.BeginNewExercise().ignore_error();
-
-    std::random_device rd;
-    std::uniform_int_distribution<int> dr(-6, 6);
-    sound_ctx.file_playback.player.transposition_offset_ = dr(rd);
-    sound_ctx.file_playback.player.SetMIDI(ctx->game.GetCurrentExercise()->midi);
-
     SDL_ResumeAudioStreamDevice(sound_ctx.file_playback.stream.get());
 
     SDL_SetEventEnabled(SDL_EVENT_MOUSE_MOTION, false);
@@ -143,16 +136,23 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         return SDL_APP_SUCCESS;
     case SDL_EVENT_KEY_DOWN: {
         auto* ev = reinterpret_cast<SDL_KeyboardEvent*>(event);
-        if (ev->key == SDLK_Q)
+        switch (ev->key) {
+        case SDLK_Q:
             return SDL_APP_SUCCESS;
-        break;
+        case SDLK_R:
+            ctx->BeginExercise();
+            break;
+        default:
+            break;
+        }
+        return SDL_APP_CONTINUE;
     }
     default:
         break;
     }
 
     if (event->type == EventType<MIDIPlayerEndEvent>()) {
-        // TODO: Game logic
+        ctx->MIDIEnded();
     } else if (event->type == EventType<MIDIInputEvent>()) {
         auto* ev = reinterpret_cast<MIDIInputEvent*>(event);
 

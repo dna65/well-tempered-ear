@@ -4,6 +4,8 @@
 
 #include "events.h"
 
+#include <random>
+
 void ReadUSBPacket(libusb_transfer* transfer)
 {
     for (int i = 0; i < transfer->actual_length; i += midi::MESSAGE_SIZE) {
@@ -111,4 +113,40 @@ void AppContext::PlayLiveMIDIEvent(const MIDIInputEvent& event)
     });
 
     generator.sample_point_ -= samples_queued;
+}
+
+void AppContext::BeginExercise()
+{
+    static std::random_device rand_dev;
+    static std::uniform_int_distribution<int> player_transposition(-6, 6);
+
+    if (game.GetState() != GameState::WAIT_FOR_READY)
+        return;
+
+    if (game.BeginNewExercise().is_error())
+        return;
+
+    midi::Player& player = sound_ctx.file_playback.player;
+
+    player.transposition_offset_ = player_transposition(rand_dev);
+    player.SetMIDI(*game.GetCurrentCadenceMIDI());
+}
+
+void AppContext::MIDIEnded()
+{
+    midi::Player& player = sound_ctx.file_playback.player;
+
+    switch (game.GetState()) {
+    case GameState::PLAYING_CADENCE:
+        player.SetMIDI(game.GetCurrentExercise()->midi);
+        game.MIDIEnded();
+        break;
+    case GameState::PLAYING_EXERCISE:
+        fmt::print("Now play it in the key of {}!\n",
+            midi::NoteName(game.GetRequiredInputKey()));
+        game.MIDIEnded();
+        break;
+    default:
+        break;
+    }
 }

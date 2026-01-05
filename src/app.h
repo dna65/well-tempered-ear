@@ -21,4 +21,6 @@ struct AppContext
     auto SetupMIDIControllerConnection() -> tb::error<usb::Error>;
     auto LoadMIDIFile(std::string_view path) -> tb::error<midi::Error>;
     void PlayLiveMIDIEvent(const MIDIInputEvent& event);
+    void BeginExercise();
+    void MIDIEnded();
 };

@@ -146,16 +146,18 @@ void Game::InputNote(uint8_t note)
 
 auto Game::BeginNewExercise() -> tb::error<NoExercisesError>
 {
+    static std::random_device rand_dev;
+    static std::uniform_int_distribution<size_t> exercise_index(0, exercises.size() - 1);
+    static std::uniform_int_distribution<uint8_t> input_key(0, 11);
+
     if (exercises.empty())
         return NoExercisesError {};
 
     note_input_buffer_.clear();
     state_ = GameState::PLAYING_CADENCE;
 
-    std::random_device rand_dev;
-    std::uniform_int_distribution<size_t> distribution(0, exercises.size() - 1);
-
-    current_exercise_ = &exercises[distribution(rand_dev)];
+    current_exercise_ = &exercises[exercise_index(rand_dev)];
+    required_input_key_ = static_cast<midi::PitchClass>(input_key(rand_dev));
 
     return tb::ok;
 }
@@ -163,4 +165,42 @@ auto Game::BeginNewExercise() -> tb::error<NoExercisesError>
 auto Game::GetCurrentExercise() const -> const Exercise*
 {
     return current_exercise_;
+}
+
+auto Game::GetRequiredInputKey() const -> midi::PitchClass
+{
+    return required_input_key_;
+}
+
+auto Game::GetCurrentCadenceMIDI() const -> const midi::MIDI*
+{
+    if (current_exercise_ == nullptr)
+        return nullptr;
+
+    switch (current_exercise_->tonality) {
+    default:
+    case Tonality::MAJOR:
+        return &major_cadence;
+    case Tonality::MINOR:
+        return &minor_cadence;
+    }
+}
+
+void Game::MIDIEnded()
+{
+    switch (state_) {
+    case GameState::PLAYING_CADENCE:
+        state_ = GameState::PLAYING_EXERCISE;
+        break;
+    case GameState::PLAYING_EXERCISE:
+        state_ = GameState::READING_INPUT;
+        break;
+    default:
+        break;
+    }
+}
+
+auto Game::GetState() const -> GameState
+{
+    return state_;
 }

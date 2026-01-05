@@ -83,6 +83,10 @@ public:
     void InputNote(uint8_t note);
     auto BeginNewExercise() -> tb::error<NoExercisesError>;
     auto GetCurrentExercise() const -> const Exercise*;
+    auto GetRequiredInputKey() const -> midi::PitchClass;
+    auto GetCurrentCadenceMIDI() const -> const midi::MIDI*;
+    void MIDIEnded();
+    auto GetState() const -> GameState;
 
 private:
     midi::MIDI major_cadence, minor_cadence;
@@ -90,4 +94,5 @@ private:
     std::vector<uint8_t> note_input_buffer_;
     const Exercise* current_exercise_ = nullptr;
     GameState state_ = GameState::WAIT_FOR_READY;
+    midi::PitchClass required_input_key_ = midi::PitchClass::C;
 };
