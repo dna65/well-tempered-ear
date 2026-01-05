@@ -358,10 +358,7 @@ auto Player::GetTicksPerSecond() const -> float
 
 auto Player::Done() const -> bool
 {
-    for (auto& [track, info] : tracks_)
-        if (!info.done) return false;
-
-    return true;
+    return std::ranges::all_of(tracks_, [] (auto& pair) { return pair.second.done; });
 }
 
 }
