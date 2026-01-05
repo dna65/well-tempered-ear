@@ -23,12 +23,12 @@ auto BaseEvent() -> SDL_CommonEvent
 
 struct MIDIInputEvent
 {
-    SDL_CommonEvent base_event = BaseEvent<MIDIInputEvent>();
+    const SDL_CommonEvent base_event = BaseEvent<MIDIInputEvent>();
     midi::EventType type;
     uint8_t note, velocity, channel;
 };
 
 struct MIDIPlayerEndEvent
 {
-    SDL_CommonEvent base_event = BaseEvent<MIDIPlayerEndEvent>();
+    const SDL_CommonEvent base_event = BaseEvent<MIDIPlayerEndEvent>();
 };
