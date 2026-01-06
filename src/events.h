@@ -5,10 +5,17 @@
 
 #include "midi.h"
 
+struct NoAvailableSDLEvents {};
+
 template<typename T>
 auto EventType() -> uint32_t
 {
-    const static uint32_t event_type = SDL_RegisterEvents(1);
+    const static uint32_t event_type = [] {
+        uint32_t event = SDL_RegisterEvents(1);
+        if (event == std::numeric_limits<uint32_t>::max())
+            throw NoAvailableSDLEvents {};
+        return event;
+    }();
     return event_type;
 }
 
