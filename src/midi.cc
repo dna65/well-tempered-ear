@@ -204,11 +204,12 @@ auto MIDI::FromStream(FILE* file) -> tb::result<MIDI, Error>
             stream.Position().get_unchecked()
         };
 
-    MIDI midi;
-    midi.format_ = static_cast<Format>(format);
-    midi.tracks_.reserve(track_count);
     // TODO: Handle tickdiv type = 1
-    midi.ticks_per_quarter_note_ = tick_div & 0x7FFF;
+    MIDI midi {
+        .tracks = tb::vec_with_capacity<Track>(track_count),
+        .format = static_cast<Format>(format),
+        .ticks_per_quarter_note = static_cast<uint16_t>(tick_div & 0x7FFF)
+    };
 
     for (size_t i = 0; i < track_count; ++i) {
         if (char chunk_type[4]; stream.ReadToArray(chunk_type, 4).is_error()
@@ -229,7 +230,7 @@ auto MIDI::FromStream(FILE* file) -> tb::result<MIDI, Error>
         if (track.is_error())
             return track.get_error();
 
-        midi.tracks_.emplace_back(track.get_mut_unchecked());
+        midi.tracks.emplace_back(track.get_mut_unchecked());
     }
 
     return midi;
@@ -275,7 +276,7 @@ auto Player::Advance() -> tb::error<EndOfMIDIError>
                 info.done = true;
                 break;
             case MetaType::TEMPO:
-                ticks_per_second_ = midi_ptr_->ticks_per_quarter_note_ * 1000000.f
+                ticks_per_second_ = midi_ptr_->ticks_per_quarter_note * 1000000.f
                                   / next_ev.usec_per_quarter_note;
                 break;
             default:
@@ -337,7 +338,7 @@ void Player::SetMIDI(const MIDI& midi)
     ticks_elapsed_ = 0;
     midi_ptr_ = &midi;
     tracks_.clear();
-    for (const Track& track : midi.tracks_) {
+    for (const Track& track : midi.tracks) {
         tracks_.emplace_back(&track, TrackInfo {});
     }
 }

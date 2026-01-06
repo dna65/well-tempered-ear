@@ -145,9 +145,12 @@ struct NoteInfo
     uint8_t velocity;
 };
 
-class MIDI
+struct MIDI
 {
-public:
+    std::vector<Track> tracks;
+    Format format;
+    uint16_t ticks_per_quarter_note;
+
     static auto FromBytes(tb::IntegerWidthRange<uint8_t> auto bytes)
     -> tb::result<MIDI, Error>
     {
@@ -164,12 +167,6 @@ public:
     static auto FromFile(std::string_view path) -> tb::result<MIDI, Error>;
 
     static auto FromStream(FILE* file) -> tb::result<MIDI, Error>;
-
-private:
-    friend class Player;
-    std::vector<Track> tracks_;
-    Format format_;
-    uint16_t ticks_per_quarter_note_;
 };
 
 class Player
