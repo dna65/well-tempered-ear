@@ -245,4 +245,12 @@ constexpr auto string_to_enum = [] (std::string_view str) -> std::optional<E> {
     return static_cast<E>(it - enum_names<E>.begin());
 };
 
+template<typename T>
+auto vec_with_capacity(size_t sz) -> std::vector<T>
+{
+    std::vector<T> vec;
+    vec.reserve(sz);
+    return vec;
+}
+
 } // namespace tb
