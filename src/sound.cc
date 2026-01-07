@@ -19,8 +19,6 @@ constexpr auto NOTE_TO_FREQUENCY_TABLE = [] () -> std::array<float, 128> {
     return result;
 }();
 
-Generator::Generator(int sample_rate) : sample_rate_(sample_rate) {}
-
 auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
     const midi::Player& midi_status, unsigned sample_offset, const Synth& synth)
     -> size_t
@@ -32,15 +30,15 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
 
     float volume = 0.3f;
     float decay_constant = synth.decay_constant;
-    float decay_common_ratio = powf(2, (-1.f / sample_rate_) * decay_constant);
+    float decay_common_ratio = powf(2, (-1.f / sample_rate) * decay_constant);
 
-    unsigned start_point = sample_point_;
+    unsigned start_point = sample_point;
 
     for (auto& [note, info] : midi_status.GetCurrentNotes()) {
-        sample_point_ = start_point;
+        sample_point = start_point;
         float initial_ticks_diff
             = current_time - info.time
-            + (sample_offset * midi_status.GetTicksPerSecond() / sample_rate_);
+            + (sample_offset * midi_status.GetTicksPerSecond() / sample_rate);
         float decay = std::clamp(
             powf(2, initial_ticks_diff * decay_constant
                     / (-1.f * midi_status.GetTicksPerSecond())),
@@ -52,10 +50,10 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
         float freq = NOTE_TO_FREQUENCY_TABLE[transposed_note];
 
         for (size_t i = 0; i < count; ++i) {
-            ++sample_point_;
+            ++sample_point;
             decay *= decay_common_ratio;
 
-            samples[i] += synth.wave_fn(freq, sample_point_, sample_rate_)
+            samples[i] += synth.wave_fn(freq, sample_point, sample_rate)
                         * volume
                         * (info.velocity / MAX_VELOCITY)
                         * decay;
@@ -100,14 +98,14 @@ void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
 
     std::ranges::fill(sample_buffer, Sample {});
 
-    float samples_per_tick = generator.sample_rate_ / file_player.GetTicksPerSecond();
+    float samples_per_tick = generator.sample_rate / file_player.GetTicksPerSecond();
     size_t samples = 0;
 
     while (samples < static_cast<size_t>(additional_amount)) {
         std::optional<midi::Ticks> ticks = file_player.TicksUntilNextEvent();
         if (!ticks) break;
 
-        samples_per_tick = generator.sample_rate_ / file_player.GetTicksPerSecond();
+        samples_per_tick = generator.sample_rate / file_player.GetTicksPerSecond();
         std::span<Sample> sample_buffer_range {
             sample_buffer.begin() + samples,
             sample_buffer.end()

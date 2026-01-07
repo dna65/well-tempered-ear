@@ -37,11 +37,11 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         .sound_ctx = {
             .live_playback {
                 .player { midi::PlayerMode::LIVE_PLAYBACK },
-                .generator { spec.freq },
+                .generator { .sample_rate = spec.freq },
             },
             .file_playback {
                 .player { midi::PlayerMode::FILE_PLAYBACK },
-                .generator { spec.freq },
+                .generator { .sample_rate = spec.freq },
             }
         },
         .window = SDL_CreateWindow("The Well Tempered Ear", 800, 600, 0)

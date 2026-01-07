@@ -78,15 +78,13 @@ constexpr Synth DEFAULT_SYNTH {
 
 struct Generator
 {
-    Generator(int sample_rate = DEFAULT_SAMPLE_RATE);
+    int sample_rate = DEFAULT_SAMPLE_RATE;
+    unsigned sample_point = 0;
 
     auto GenerateSamples(std::span<Sample> dest, size_t count,
                          const midi::Player& midi_status, unsigned sample_offset,
                          const Synth& synth)
     -> size_t;
-
-    int sample_rate_ = DEFAULT_SAMPLE_RATE;
-    unsigned sample_point_ = 0;
 };
 
 struct PlaybackUnit

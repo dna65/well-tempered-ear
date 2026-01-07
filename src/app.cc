@@ -112,7 +112,7 @@ void AppContext::PlayLiveMIDIEvent(const MIDIInputEvent& event)
         }
     });
 
-    generator.sample_point_ -= samples_queued;
+    generator.sample_point -= samples_queued;
 }
 
 void AppContext::BeginExercise()
