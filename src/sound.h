@@ -20,12 +20,69 @@ using Sample = float;
 using UAudioStream = std::unique_ptr<SDL_AudioStream,
     tb::deleter<SDL_DestroyAudioStream>>;
 
+using WaveFunction = float (*)(float, unsigned, unsigned);
+using Harmonic = unsigned;
+using Amplitude = uint8_t;
+
+constexpr Amplitude MAX_AMPLITUDE = std::numeric_limits<Amplitude>::max();
+
+template<WaveFunction Fn, Harmonic H = 1, Amplitude A = MAX_AMPLITUDE>
+constexpr float Waveform(float freq, unsigned time, unsigned wavelength)
+{
+    return (static_cast<float>(A) / MAX_AMPLITUDE) * Fn(H * freq, time, wavelength);
+}
+
+template<WaveFunction... Fns>
+constexpr float CompositeWaveform(float freq, unsigned time, unsigned wavelength)
+{
+    constexpr auto waveforms = std::to_array<WaveFunction>({ Fns... });
+    float result = 0;
+    for (WaveFunction f : waveforms)
+        result += f(freq, time, wavelength);
+
+    return result;
+}
+
+struct Synth
+{
+    WaveFunction wave_fn = nullptr;
+    float decay_constant = 0;
+};
+
+namespace waveforms
+{
+
+constexpr auto pulse = [] (float freq, unsigned time, unsigned wavelength) {
+    float x = time * freq / wavelength;
+    float x_i = floor(x);
+
+    float x2 = x - (wavelength * 0.5f) / wavelength;
+    float x2_i = floor(x2);
+
+    return (x_i - x) - (x2_i - x2);
+};
+
+constexpr auto sine = [] (float freq, unsigned time, unsigned wavelength) {
+    return sinf(time * 2.f * M_PI * freq / wavelength);
+};
+
+}
+
+constexpr Synth DEFAULT_SYNTH {
+    .wave_fn = CompositeWaveform<
+        Waveform<waveforms::pulse>, Waveform<waveforms::sine, 2, 128>,
+        Waveform<waveforms::sine, 3, 64>
+    >,
+    .decay_constant = 1 / 0.3f
+};
+
 struct Generator
 {
     Generator(int sample_rate = DEFAULT_SAMPLE_RATE);
 
     auto GenerateSamples(std::span<Sample> dest, size_t count,
-                         const midi::Player& midi_status, unsigned sample_offset)
+                         const midi::Player& midi_status, unsigned sample_offset,
+                         const Synth& synth)
     -> size_t;
 
     int sample_rate_ = DEFAULT_SAMPLE_RATE;

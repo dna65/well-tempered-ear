@@ -22,31 +22,16 @@ constexpr auto NOTE_TO_FREQUENCY_TABLE = [] () -> std::array<float, 128> {
 Generator::Generator(int sample_rate) : sample_rate_(sample_rate) {}
 
 auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
-    const midi::Player& midi_status, unsigned sample_offset) -> size_t
+    const midi::Player& midi_status, unsigned sample_offset, const Synth& synth)
+    -> size_t
 {
-    constexpr auto pulse = [] (uint8_t note, unsigned point, unsigned rate) {
-        float x = point * NOTE_TO_FREQUENCY_TABLE[note] / rate;
-        float x_i = floor(x);
-
-        float x2 = x - (rate * 0.5) / rate;
-        float x2_i = floor(x2);
-
-        return (x_i - x) - (x2_i - x2);
-    };
-
-    [[maybe_unused]]
-    constexpr auto sine = [] (uint8_t note, unsigned point, unsigned rate) {
-        return sinf(point * 2.f * M_PI * NOTE_TO_FREQUENCY_TABLE[note] / rate);
-    };
-
     if (count > samples.size())
         count = samples.size();
 
     midi::Ticks current_time = midi_status.GetTicksElapsed();
 
     float volume = 0.3f;
-    float half_life = 0.2f;
-    float decay_constant = 1.f / half_life;
+    float decay_constant = synth.decay_constant;
     float decay_common_ratio = powf(2, (-1.f / sample_rate_) * decay_constant);
 
     unsigned start_point = sample_point_;
@@ -64,12 +49,13 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
 
         uint8_t transposed_note
             = std::clamp<uint8_t>(note + midi_status.transposition_offset_, 0, 127);
+        float freq = NOTE_TO_FREQUENCY_TABLE[transposed_note];
 
         for (size_t i = 0; i < count; ++i) {
             ++sample_point_;
             decay *= decay_common_ratio;
 
-            samples[i] += pulse(transposed_note, sample_point_, sample_rate_)
+            samples[i] += synth.wave_fn(freq, sample_point_, sample_rate_)
                         * volume
                         * (info.velocity / MAX_VELOCITY)
                         * decay;
@@ -95,7 +81,7 @@ void Audio_LiveCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
 
     std::lock_guard<std::mutex> guard(sound_ctx->lock);
     size_t samples = generator.GenerateSamples(sample_buffer,
-        additional_amount, live_player, 0);
+        additional_amount, live_player, 0, DEFAULT_SYNTH);
     SDL_PutAudioStreamData(stream, sample_buffer.data(), samples * sizeof(Sample));
 }
 
@@ -130,7 +116,7 @@ void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
         size_t requested_samples = ticks.value() * samples_per_tick
             - samples_since_last_event;
         size_t samples_generated = generator.GenerateSamples(sample_buffer_range,
-            requested_samples, file_player, samples_since_last_event);
+            requested_samples, file_player, samples_since_last_event, DEFAULT_SYNTH);
 
         samples += samples_generated;
 
