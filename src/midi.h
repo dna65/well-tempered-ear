@@ -213,4 +213,9 @@ constexpr auto NoteName(T note) -> std::string_view
         return NOTE_NAMES[note % 12];
 }
 
+constexpr auto GetPitchClass(uint8_t note) -> PitchClass
+{
+    return static_cast<PitchClass>(note % 12);
+}
+
 }

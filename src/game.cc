@@ -141,7 +141,45 @@ void Game::InputNote(uint8_t note)
     if (state_ != GameState::READING_INPUT)
         return;
 
+    if (note_input_buffer_.size() >= exercise_notes_.size())
+        return;
+
+    const uint8_t downward_transposition_factor
+        = static_cast<uint8_t>(required_input_key_);
+    const uint8_t comparator = exercise_notes_[note_input_buffer_.size()]
+        + downward_transposition_factor;
+
+    auto wrong_note = [this, comparator, note] () {
+        fmt::print("Wrong note: {} (should have been {})!\n", midi::NoteName(note),
+            midi::NoteName(comparator));
+        state_ = GameState::WAIT_FOR_READY;
+    };
+
+    if (note_input_buffer_.empty()) {
+        if (midi::GetPitchClass(note) != midi::GetPitchClass(comparator)) {
+            wrong_note();
+            return;
+        }
+
+        octave_displacement_ = comparator - note;
+        note += octave_displacement_;
+        note_input_buffer_.push_back(note);
+        return;
+    }
+
+    note += octave_displacement_;
+    if (note != comparator) {
+        wrong_note();
+        return;
+    }
+
     note_input_buffer_.push_back(note);
+
+    if (note_input_buffer_.size() >= exercise_notes_.size()) {
+        fmt::print("Correct!\n");
+        state_ = GameState::WAIT_FOR_READY;
+        return;
+    }
 }
 
 auto Game::BeginNewExercise() -> tb::error<NoExercisesError>
@@ -154,10 +192,15 @@ auto Game::BeginNewExercise() -> tb::error<NoExercisesError>
         return NoExercisesError {};
 
     note_input_buffer_.clear();
+    exercise_notes_.clear();
     state_ = GameState::PLAYING_CADENCE;
 
     current_exercise_ = &exercises[exercise_index(rand_dev)];
     required_input_key_ = static_cast<midi::PitchClass>(input_key(rand_dev));
+
+    if (current_exercise_->type == ExerciseType::SINGLE_VOICE_TRANSCRIPTION) {
+        current_exercise_->midi.tracks[0].ToNoteSeries(exercise_notes_);
+    }
 
     return tb::ok;
 }
@@ -194,6 +237,9 @@ void Game::MIDIEnded()
         break;
     case GameState::PLAYING_EXERCISE:
         state_ = GameState::READING_INPUT;
+        break;
+    case GameState::PLAYING_RESULT:
+        state_ = GameState::WAIT_FOR_READY;
         break;
     default:
         break;
