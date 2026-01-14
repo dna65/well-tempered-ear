@@ -34,7 +34,10 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
 
     unsigned start_point = sample_point;
 
-    for (auto& [note, info] : midi_status.GetCurrentNotes()) {
+    for (uint8_t note = 0; note <= midi::NOTE_MAX; ++note) {
+        const midi::NoteInfo& info = midi_status.GetCurrentNotes()[note];
+        if (!info.note_on) continue;
+
         sample_point = start_point;
         float initial_ticks_diff
             = current_time - info.time

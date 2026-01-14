@@ -18,6 +18,7 @@ namespace midi
 {
 
 constexpr size_t MESSAGE_SIZE = 4;
+constexpr uint8_t NOTE_MAX = std::numeric_limits<int8_t>::max();
 
 using Ticks = uint64_t;
 
@@ -143,6 +144,7 @@ struct NoteInfo
 {
     Ticks time;
     uint8_t velocity;
+    bool note_on = false;
 };
 
 struct MIDI
@@ -172,7 +174,7 @@ struct MIDI
 class Player
 {
 public:
-    using NoteMap = std::unordered_map<uint8_t, NoteInfo>;
+    using NoteMap = std::array<NoteInfo, NOTE_MAX + 1>;
     Player(PlayerMode mode = PlayerMode::FILE_PLAYBACK);
 
     auto Advance() -> tb::error<EndOfMIDIError>;
@@ -189,7 +191,7 @@ private:
     using TimePoint = std::chrono::time_point<Clock>;
     using Seconds = std::chrono::duration<double>;
 
-    NoteMap notes_;
+    NoteMap notes_ = {};
     std::vector<std::pair<const Track*, TrackInfo>> tracks_;
     const MIDI* midi_ptr_ = nullptr;
     TimePoint start_time_ = Clock::now();
