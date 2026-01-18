@@ -15,7 +15,7 @@
 
 constexpr int SAMPLE_RATE = 64000;
 
-SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
+auto SDL_AppInit(void** appstate, int argc, char** argv) -> SDL_AppResult
 {
     if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
         fmt::print("Failed to initialise SDL: {}\n", SDL_GetError());
@@ -114,7 +114,7 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result)
     usb::Exit();
 }
 
-SDL_AppResult SDL_AppIterate(void* appstate)
+auto SDL_AppIterate(void* appstate) -> SDL_AppResult
 {
     constexpr uint64_t MS_PER_FRAME = 1000 / 30;
     static uint64_t ms_elapsed = SDL_GetTicks();
@@ -127,7 +127,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     return SDL_APP_CONTINUE;
 }
 
-SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
+auto SDL_AppEvent(void* appstate, SDL_Event* event) -> SDL_AppResult
 {
     auto* ctx = static_cast<AppContext*>(appstate);
 
