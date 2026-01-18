@@ -4,10 +4,11 @@
 #include "game.h"
 #include "midi.h"
 #include "sound.h"
-#include "tb.h"
 #include "usb.h"
 
 #include <SDL3/SDL_video.h>
+
+#include <tb/tb.h>
 
 struct AppContext
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tb.h"
+#include <tb/tb.h>
 
 #include <memory>
 #include <thread>

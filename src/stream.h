@@ -2,7 +2,7 @@
 
 #include <cstdio>
 
-#include "tb.h"
+#include <tb/tb.h>
 
 enum class StreamError
 {

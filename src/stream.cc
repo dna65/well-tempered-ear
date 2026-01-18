@@ -1,6 +1,6 @@
 #include "stream.h"
 
-#include "tb.h"
+#include <tb/tb.h>
 
 auto Stream::Skip(size_t bytes) -> tb::error<StreamError>
 {

@@ -206,7 +206,7 @@ auto MIDI::FromStream(FILE* file) -> tb::result<MIDI, Error>
 
     // TODO: Handle tickdiv type = 1
     MIDI midi {
-        .tracks = tb::vec_with_capacity<Track>(track_count),
+        .tracks = tb::with_capacity(track_count),
         .format = static_cast<Format>(format),
         .ticks_per_quarter_note = static_cast<uint16_t>(tick_div & 0x7FFF)
     };

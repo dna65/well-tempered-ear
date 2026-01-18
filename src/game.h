@@ -3,7 +3,8 @@
 #include <vector>
 
 #include "midi.h"
-#include "tb.h"
+
+#include <tb/tb.h>
 
 using namespace std::literals;
 
@@ -91,8 +92,8 @@ public:
 private:
     midi::MIDI major_cadence, minor_cadence;
     std::vector<Exercise> exercises;
-    std::vector<uint8_t> note_input_buffer_ = tb::vec_with_capacity<uint8_t>(32);
-    std::vector<uint8_t> exercise_notes_ = tb::vec_with_capacity<uint8_t>(32);
+    std::vector<uint8_t> note_input_buffer_ = tb::with_capacity(32);
+    std::vector<uint8_t> exercise_notes_ = tb::with_capacity(32);
     const Exercise* current_exercise_ = nullptr;
     GameState state_ = GameState::WAIT_FOR_READY;
     midi::PitchClass required_input_key_ = midi::PitchClass::C;

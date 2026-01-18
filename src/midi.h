@@ -9,10 +9,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include "tb.h"
 #include "stream.h"
 
 #include <fmt/format.h>
+
+#include <tb/tb.h>
 
 namespace midi
 {
