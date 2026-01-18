@@ -153,19 +153,6 @@ struct MIDI
     Format format;
     uint16_t ticks_per_quarter_note;
 
-    static auto FromBytes(tb::IntegerWidthRange<uint8_t> auto bytes)
-    -> tb::result<MIDI, Error>
-    {
-        using ByteType = std::ranges::range_value_t<decltype(bytes)>;
-
-        // TODO: fmemopen(3) only in POSIX standard
-        FILE* file = fmemopen(const_cast<ByteType*>(std::data(bytes)),
-            std::size(bytes), "rb");
-
-        tb::scoped_guard close_file = [file] { fclose(file); };
-        return FromStream(file);
-    }
-
     static auto FromFile(std::string_view path) -> tb::result<MIDI, Error>;
 
     static auto FromStream(FILE* file) -> tb::result<MIDI, Error>;
