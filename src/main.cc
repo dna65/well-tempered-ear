@@ -15,7 +15,7 @@
 
 constexpr int SAMPLE_RATE = 64000;
 
-auto SDL_AppInit(void** appstate, int argc, char** argv) -> SDL_AppResult
+auto SDL_AppInit_Safe(void** appstate, int argc, char** argv) -> SDL_AppResult
 {
     if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
         fmt::print("Failed to initialise SDL: {}\n", SDL_GetError());
@@ -105,6 +105,16 @@ auto SDL_AppInit(void** appstate, int argc, char** argv) -> SDL_AppResult
     return SDL_APP_CONTINUE;
 }
 
+auto SDL_AppInit(void** appstate, int argc, char** argv) -> SDL_AppResult
+{
+    try {
+        return SDL_AppInit_Safe(appstate, argc, argv);
+    } catch (std::exception& e) {
+        fmt::print("Exception occurred: {}\n", e.what());
+        return SDL_APP_FAILURE;
+    }
+}
+
 void SDL_AppQuit(void* appstate, SDL_AppResult result)
 {
     auto* ctx = static_cast<AppContext*>(appstate);
@@ -114,7 +124,7 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result)
     usb::Exit();
 }
 
-auto SDL_AppIterate(void* appstate) -> SDL_AppResult
+auto SDL_AppIterate_Safe(void* appstate) -> SDL_AppResult
 {
     constexpr uint64_t MS_PER_FRAME = 1000 / 30;
     static uint64_t ms_elapsed = SDL_GetTicks();
@@ -127,7 +137,17 @@ auto SDL_AppIterate(void* appstate) -> SDL_AppResult
     return SDL_APP_CONTINUE;
 }
 
-auto SDL_AppEvent(void* appstate, SDL_Event* event) -> SDL_AppResult
+auto SDL_AppIterate(void* appstate) -> SDL_AppResult
+{
+    try {
+        return SDL_AppIterate_Safe(appstate);
+    } catch (std::exception& e) {
+        fmt::print("Exception occurred: {}\n", e.what());
+        return SDL_APP_FAILURE;
+    }
+}
+
+auto SDL_AppEvent_Safe(void* appstate, SDL_Event* event) -> SDL_AppResult
 {
     auto* ctx = static_cast<AppContext*>(appstate);
 
@@ -163,4 +183,14 @@ auto SDL_AppEvent(void* appstate, SDL_Event* event) -> SDL_AppResult
     }
 
     return SDL_APP_CONTINUE;
+}
+
+auto SDL_AppEvent(void* appstate, SDL_Event* event) -> SDL_AppResult
+{
+    try {
+        return SDL_AppEvent_Safe(appstate, event);
+    } catch (std::exception& e) {
+        fmt::print("Exception occurred: {}\n", e.what());
+        return SDL_APP_FAILURE;
+    }
 }

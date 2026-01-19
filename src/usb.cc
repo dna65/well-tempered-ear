@@ -89,8 +89,13 @@ void DeviceHandle::Close()
 PollingContext::PollingContext()
 {
     thread_ = std::thread([this] {
-        while (libusb_handle_events_completed(nullptr, nullptr) == LIBUSB_SUCCESS
-            && !done_) {}
+        try {
+            while (libusb_handle_events_completed(nullptr, nullptr) == LIBUSB_SUCCESS
+                && !done_) {}
+        } catch (std::exception& e) {
+            fmt::print("Exception occurred: {}\n", e.what());
+            throw;
+        }
     });
 }
 

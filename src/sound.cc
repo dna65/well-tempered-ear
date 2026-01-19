@@ -66,7 +66,7 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
     return count;
 }
 
-void Audio_LiveCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
+void Audio_LiveCallback_Safe(void* ctx, SDL_AudioStream* stream, int additional_amount,
     int total_amount)
 {
     if (additional_amount < 1) return;
@@ -86,7 +86,18 @@ void Audio_LiveCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
     SDL_PutAudioStreamData(stream, sample_buffer.data(), samples * sizeof(Sample));
 }
 
-void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
+void Audio_LiveCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
+    int total_amount)
+{
+    try {
+        Audio_LiveCallback_Safe(ctx, stream, additional_amount, total_amount);
+    } catch (std::exception& e) {
+        fmt::print("Exception occurred: {}\n", e.what());
+        throw;
+    }
+}
+
+void Audio_FileCallback_Safe(void* ctx, SDL_AudioStream* stream, int additional_amount,
     int total_amount)
 {
     if (additional_amount < 1) return;
@@ -138,4 +149,15 @@ void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
     }
 
     SDL_PutAudioStreamData(stream, sample_buffer.data(), samples * sizeof(Sample));
+}
+
+void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amount,
+    int total_amount)
+{
+    try {
+        Audio_FileCallback_Safe(ctx, stream, additional_amount, total_amount);
+    } catch (std::exception& e) {
+        fmt::print("Exception occurred: {}\n", e.what());
+        throw;
+    }
 }
