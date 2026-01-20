@@ -170,6 +170,17 @@ auto Track::FromStream(FILE* file, uint32_t track_size) -> tb::result<Track, Err
     return track;
 }
 
+void Track::ToNoteSeries(std::vector<uint8_t>& output) const
+{
+    std::ranges::transform(
+        events | std::views::filter([] (const Event& e) -> bool {
+            return e.type == EventType::NOTE_ON;
+        }),
+        std::back_inserter(output),
+        [] (const Event& e) -> uint8_t { return e.note_event.note; }
+    );
+}
+
 auto MIDI::FromStream(FILE* file) -> tb::result<MIDI, Error>
 {
     Stream stream(file);

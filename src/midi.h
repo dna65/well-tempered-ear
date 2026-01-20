@@ -118,18 +118,7 @@ struct Track
     std::vector<Event> events;
 
     static auto FromStream(FILE* file, uint32_t track_size) -> tb::result<Track, Error>;
-
-    template<typename BackInsertable>
-    void ToNoteSeries(BackInsertable& output) const
-    {
-        std::ranges::transform(
-            events | std::views::filter([] (const Event& e) -> bool {
-                return e.type == EventType::NOTE_ON;
-            }),
-            std::back_inserter(output),
-            [] (const Event& e) -> uint8_t { return e.note_event.note; }
-        );
-    }
+    void ToNoteSeries(std::vector<uint8_t>& output) const;
 };
 
 constexpr size_t BEFORE_FIRST_EVENT = -1;
@@ -155,7 +144,6 @@ struct MIDI
     uint16_t ticks_per_quarter_note;
 
     static auto FromFile(std::string_view path) -> tb::result<MIDI, Error>;
-
     static auto FromStream(FILE* file) -> tb::result<MIDI, Error>;
 };
 
