@@ -35,12 +35,7 @@ constexpr float Waveform(float freq, unsigned time, unsigned wavelength)
 template<WaveFunction... Fns>
 constexpr float CompositeWaveform(float freq, unsigned time, unsigned wavelength)
 {
-    constexpr auto waveforms = std::to_array<WaveFunction>({ Fns... });
-    float result = 0;
-    for (WaveFunction f : waveforms)
-        result += f(freq, time, wavelength);
-
-    return result;
+    return (Fns(freq, time, wavelength) + ...);
 }
 
 struct Synth
