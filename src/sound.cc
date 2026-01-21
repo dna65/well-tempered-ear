@@ -34,7 +34,7 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
 
     unsigned start_point = sample_point;
 
-    for (uint8_t note = 0; note <= midi::NOTE_MAX; ++note) {
+    for (uint8_t note = 0; note <= midi::MAX_NOTE; ++note) {
         const midi::NoteInfo& info = midi_status.GetCurrentNotes()[note];
         if (!info.note_on) continue;
 
@@ -58,7 +58,7 @@ auto Generator::GenerateSamples(std::span<Sample> samples, size_t count,
 
             samples[i] += synth.wave_fn(freq, sample_point, sample_rate)
                         * volume
-                        * (info.velocity / MAX_VELOCITY)
+                        * (info.velocity / midi::MAX_VELOCITY)
                         * decay;
         }
     }

@@ -19,7 +19,8 @@ namespace midi
 {
 
 constexpr size_t MESSAGE_SIZE = 4;
-constexpr uint8_t NOTE_MAX = std::numeric_limits<int8_t>::max();
+constexpr uint8_t MAX_NOTE = std::numeric_limits<int8_t>::max();
+constexpr float MAX_VELOCITY = std::numeric_limits<int8_t>::max();
 
 using Ticks = uint64_t;
 
@@ -150,7 +151,7 @@ struct MIDI
 class Player
 {
 public:
-    using NoteMap = std::array<NoteInfo, NOTE_MAX + 1>;
+    using NoteMap = std::array<NoteInfo, MAX_NOTE + 1>;
     Player(PlayerMode mode = PlayerMode::FILE_PLAYBACK);
 
     auto Advance() -> tb::error<EndOfMIDIError>;

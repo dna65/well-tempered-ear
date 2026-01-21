@@ -13,7 +13,6 @@
 #include "midi.h"
 
 constexpr int DEFAULT_SAMPLE_RATE = 4000;
-constexpr float MAX_VELOCITY = UINT8_MAX;
 constexpr size_t SAMPLE_BUFFER_SIZE = 4096;
 
 using Sample = float;

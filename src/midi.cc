@@ -273,7 +273,7 @@ auto Player::Advance() -> tb::error<EndOfMIDIError>
 
         switch (next_ev.type) {
         case EventType::NOTE_ON:
-            if (next_ev.note_event.note > NOTE_MAX) break;
+            if (next_ev.note_event.note > MAX_NOTE) break;
             notes_[next_ev.note_event.note] = {
                 .time = ticks_elapsed_,
                 .velocity = next_ev.note_event.velocity,
@@ -281,7 +281,7 @@ auto Player::Advance() -> tb::error<EndOfMIDIError>
             };
             break;
         case EventType::NOTE_OFF:
-            if (next_ev.note_event.note > NOTE_MAX) break;
+            if (next_ev.note_event.note > MAX_NOTE) break;
             notes_[next_ev.note_event.note].note_on = false;
             break;
         case EventType::META:
@@ -311,7 +311,7 @@ void Player::PlayEvent(const Event& event)
     ticks_elapsed_ = ticks_per_second_ * time_diff.count();
     switch (event.type) {
     case EventType::NOTE_ON:
-        if (event.note_event.note > NOTE_MAX) return;
+        if (event.note_event.note > MAX_NOTE) return;
         notes_[event.note_event.note] = {
             .time = ticks_elapsed_,
             .velocity = event.note_event.velocity,
@@ -319,7 +319,7 @@ void Player::PlayEvent(const Event& event)
         };
         break;
     case EventType::NOTE_OFF:
-        if (event.note_event.note > NOTE_MAX) return;
+        if (event.note_event.note > MAX_NOTE) return;
         notes_[event.note_event.note].note_on = false;
         break;
     default:
