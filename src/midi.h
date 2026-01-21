@@ -121,7 +121,7 @@ struct Track
     void ToNoteSeries(std::vector<uint8_t>& output) const;
 };
 
-constexpr size_t BEFORE_FIRST_EVENT = -1;
+constexpr size_t BEFORE_FIRST_EVENT = std::numeric_limits<size_t>::max();
 
 struct TrackInfo
 {
