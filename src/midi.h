@@ -179,7 +179,7 @@ public:
     uint8_t transposition_offset_ = 0;
 };
 
-template<typename T> requires std::same_as<T, uint8_t> || std::same_as<T, PitchClass>
+template<tb::either<uint8_t, PitchClass> T>
 constexpr auto NoteName(T note) -> std::string_view
 {
     constexpr std::array<std::string_view, 12> NOTE_NAMES {
