@@ -44,7 +44,7 @@ auto SDL_AppInit_Safe(void** appstate, int argc, char** argv) -> SDL_AppResult
                 .generator { .sample_rate = spec.freq },
             }
         },
-        .window = SDL_CreateWindow("The Well Tempered Ear", 800, 600, 0)
+        .window { SDL_CreateWindow("The Well Tempered Ear", 800, 600, 0) }
     };
 
     if (ctx->window == nullptr) {

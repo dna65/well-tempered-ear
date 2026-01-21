@@ -10,6 +10,10 @@
 
 #include <tb/tb.h>
 
+#include <memory>
+
+using UWindow = std::unique_ptr<SDL_Window, tb::deleter<SDL_DestroyWindow>>;
+
 struct AppContext
 {
     SoundContext sound_ctx;
@@ -17,7 +21,7 @@ struct AppContext
     usb::DeviceHandle device_handle;
     midi::MIDI midi_file;
     usb::PollingContext polling_ctx {};
-    SDL_Window* window;
+    UWindow window;
 
     auto SetupMIDIControllerConnection() -> tb::error<usb::Error>;
     auto LoadMIDIFile(std::string_view path) -> tb::error<midi::Error>;
