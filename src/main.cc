@@ -119,7 +119,6 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result)
 {
     auto* ctx = static_cast<AppContext*>(appstate);
 
-    ctx->device_handle.Close();
     delete ctx;
     usb::Exit();
 }

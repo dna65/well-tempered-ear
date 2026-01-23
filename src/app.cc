@@ -54,7 +54,6 @@ auto AppContext::SetupMIDIControllerConnection() -> tb::error<usb::Error>
     }
 
     const std::vector<usb::DeviceEntry>& entries = devs_or_err.get_unchecked();
-    usb::DeviceHandle handle;
 
     if (entries.empty())
         return usb::Error { LIBUSB_ERROR_NO_DEVICE };

@@ -60,8 +60,16 @@ struct DeviceHandle
     void*       user_data = nullptr;
     libusb_transfer_cb_fn event_callback = nullptr;
 
+    DeviceHandle() = default;
+
+    DeviceHandle(const DeviceHandle&) = delete;
+    DeviceHandle& operator=(const DeviceHandle&) = delete;
+
+    DeviceHandle(DeviceHandle&&) = default;
+    DeviceHandle& operator=(DeviceHandle&&) = default;
+
     void ReceiveBulkPackets(libusb_transfer_cb_fn cb);
-    void Close();
+    ~DeviceHandle();
 };
 
 inline void free_dev_list(libusb_device** ptr)

@@ -8,16 +8,16 @@ namespace usb
 auto DeviceEntry::Open(void* event_context_user_data) const
 -> tb::result<DeviceHandle, Error>
 {
+    DeviceHandle result;
+    result.entry = *this;
+    result.user_data = event_context_user_data;
+
     libusb_device_handle* dev_handle;
     int err = libusb_open(device_, &dev_handle);
     if (err != LIBUSB_SUCCESS)
         return Error { err };
 
-    DeviceHandle result {
-        .entry { *this },
-        .dev_handle { dev_handle },
-        .user_data = event_context_user_data
-    };
+    result.dev_handle.reset(dev_handle);
 
     libusb_set_auto_detach_kernel_driver(dev_handle, 1);
 
@@ -77,13 +77,10 @@ void DeviceHandle::ReceiveBulkPackets(libusb_transfer_cb_fn cb)
     }
 }
 
-void DeviceHandle::Close()
+DeviceHandle::~DeviceHandle()
 {
     if (dev_handle)
         libusb_release_interface(dev_handle.get(), entry.interface_index);
-    dev_handle.reset();
-    cfg_desc.reset();
-    transfer.reset();
 }
 
 PollingContext::PollingContext()
