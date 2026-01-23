@@ -102,7 +102,7 @@ void AppContext::PlayLiveMIDIEvent(const MIDIInputEvent& event)
 
     SDL_ClearAudioStream(stream);
 
-    std::lock_guard<std::mutex> guard(sound_ctx.lock);
+    std::scoped_lock guard(sound_ctx.lock);
 
     player.PlayEvent({
         .type = event.type,

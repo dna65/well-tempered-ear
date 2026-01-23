@@ -80,7 +80,7 @@ void Audio_LiveCallback_Safe(void* ctx, SDL_AudioStream* stream, int additional_
 
     std::ranges::fill(sample_buffer, Sample {});
 
-    std::lock_guard<std::mutex> guard(sound_ctx->lock);
+    std::scoped_lock guard(sound_ctx->lock);
     size_t samples = generator.GenerateSamples(sample_buffer,
         additional_amount, live_player, 0, DEFAULT_SYNTH);
     SDL_PutAudioStreamData(stream, sample_buffer.data(), samples * sizeof(Sample));
