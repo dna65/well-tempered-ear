@@ -84,7 +84,7 @@ struct Generator
 struct PlaybackUnit
 {
     midi::Player player;
-    std::vector<Sample> sample_buffer = std::vector<Sample>(SAMPLE_BUFFER_SIZE);
+    tb::dynamically_allocated_array<Sample, SAMPLE_BUFFER_SIZE> sample_buffer {};
     UAudioStream stream;
     Generator generator;
     unsigned samples_since_last_event = 0;
