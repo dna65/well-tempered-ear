@@ -14,17 +14,21 @@
 
 using UWindow = std::unique_ptr<SDL_Window, tb::deleter<SDL_DestroyWindow>>;
 
+struct LoadResourcesError {};
+
 struct AppContext
 {
     SoundContext sound_ctx;
-    Game game;
+    Resources resources;
+    Game game { resources };
     usb::DeviceHandle device_handle;
-    midi::MIDI midi_file;
     usb::PollingContext polling_ctx {};
     UWindow window;
 
+    auto LoadResources(std::string_view exercises_path,
+        std::string_view major_cadence, std::string_view minor_cadence)
+    -> tb::error<LoadResourcesError>;
     auto SetupMIDIControllerConnection() -> tb::error<usb::Error>;
-    auto LoadMIDIFile(std::string_view path) -> tb::error<midi::Error>;
     void PlayLiveMIDIEvent(const MIDIInputEvent& event);
     void BeginExercise();
     void MIDIEnded();

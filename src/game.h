@@ -34,7 +34,7 @@ enum class GameState
     PLAYING_RESULT
 };
 
-struct LoadError
+struct LoadExercisesError
 {
     enum Type
     {
@@ -63,12 +63,27 @@ inline constexpr auto tb::enum_names<Tonality> = std::to_array({
     "major"sv, "minor"sv
 });
 
+using ResourceIndex = uint32_t;
+constexpr ResourceIndex INVALID_RESOURCE = std::numeric_limits<ResourceIndex>::max();
+
+using MIDIIndex = ResourceIndex;
+using ExerciseIndex = ResourceIndex;
+
 struct Exercise
 {
-    midi::MIDI midi;
+    MIDIIndex midi;
     ExerciseType type;
     Tonality tonality;
     Difficulty difficulty;
+};
+
+struct Resources
+{
+    std::vector<midi::MIDI> midis;
+    std::vector<Exercise> exercises;
+
+    auto LoadMIDI(std::string_view path) -> tb::result<MIDIIndex, midi::Error>;
+    auto LoadExercises(std::string_view path) -> tb::error<LoadExercisesError>;
 };
 
 struct NoExercisesError {};
@@ -76,11 +91,9 @@ struct NoExercisesError {};
 class Game
 {
 public:
-    Game() = default;
+    Game(const Resources& resources);
 
-    auto LoadCadences(std::string_view major_path, std::string_view minor_path)
-    -> tb::error<midi::Error>;
-    auto LoadExercises(std::string_view path) -> tb::error<LoadError>;
+    void SetCadences(MIDIIndex major, MIDIIndex minor);
     void InputNote(uint8_t note);
     auto BeginNewExercise() -> tb::error<NoExercisesError>;
     auto GetCurrentExercise() const -> const Exercise*;
@@ -90,11 +103,11 @@ public:
     auto GetState() const -> GameState;
 
 private:
-    midi::MIDI major_cadence, minor_cadence;
-    std::vector<Exercise> exercises;
+    MIDIIndex major_cadence = INVALID_RESOURCE, minor_cadence = INVALID_RESOURCE;
     std::vector<uint8_t> note_input_buffer_ = tb::with_capacity(32);
     std::vector<uint8_t> exercise_notes_ = tb::with_capacity(32);
-    const Exercise* current_exercise_ = nullptr;
+    const Resources& resources_;
+    ExerciseIndex current_exercise_ = INVALID_RESOURCE;
     GameState state_ = GameState::WAIT_FOR_READY;
     midi::PitchClass required_input_key_ = midi::PitchClass::C;
     int8_t octave_displacement_ = 0;

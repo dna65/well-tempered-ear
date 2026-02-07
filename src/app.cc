@@ -37,6 +37,33 @@ void ReadUSBPacket(libusb_transfer* transfer)
     }
 }
 
+auto AppContext::LoadResources(std::string_view exercises_path,
+        std::string_view major_cadence, std::string_view minor_cadence)
+-> tb::error<LoadResourcesError>
+{
+    if (auto result = resources.LoadExercises(exercises_path);
+        result.is_error()) {
+        fmt::print("Failed to load exercises: {}\n", result.get_error().What());
+        return LoadResourcesError {};
+    }
+
+    auto major = resources.LoadMIDI(major_cadence);
+    if (major.is_error()) {
+        fmt::print("Failed to load '{}': {}\n", major_cadence, major.get_error().What());
+        return LoadResourcesError {};
+    }
+
+    auto minor = resources.LoadMIDI(minor_cadence);
+    if (minor.is_error()) {
+        fmt::print("Failed to load '{}': {}\n", minor_cadence, minor.get_error().What());
+        return LoadResourcesError {};
+    }
+
+    game.SetCadences(major.get_unchecked(), minor.get_unchecked());
+
+    return tb::ok;
+}
+
 auto AppContext::SetupMIDIControllerConnection() -> tb::error<usb::Error>
 {
     auto list_or_err = usb::IndexDevices();
@@ -69,18 +96,6 @@ auto AppContext::SetupMIDIControllerConnection() -> tb::error<usb::Error>
 
     device_handle = std::move(handle_or_err.get_mut_unchecked());
     device_handle.ReceiveBulkPackets(ReadUSBPacket);
-
-    return tb::ok;
-}
-
-auto AppContext::LoadMIDIFile(std::string_view path) -> tb::error<midi::Error>
-{
-    auto result = midi::MIDI::FromFile(path);
-    if (result.is_error())
-        return result.get_error();
-
-    midi_file = std::move(result.get_mut_unchecked());
-    sound_ctx.file_playback.player.SetMIDI(midi_file);
 
     return tb::ok;
 }
@@ -137,7 +152,7 @@ void AppContext::MIDIEnded()
 
     switch (game.GetState()) {
     case GameState::PLAYING_CADENCE:
-        player.SetMIDI(game.GetCurrentExercise()->midi);
+        player.SetMIDI(resources.midis[game.GetCurrentExercise()->midi]);
         game.MIDIEnded();
         break;
     case GameState::PLAYING_EXERCISE:

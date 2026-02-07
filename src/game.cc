@@ -68,28 +68,22 @@ auto TypedRead(tb::type_tag_t<EnumName<E>>, Stream stream)
     return EnumName<E> { *value };
 }
 
-auto Game::LoadCadences(std::string_view major_path, std::string_view minor_path)
--> tb::error<midi::Error>
+auto Resources::LoadMIDI(std::string_view path)
+-> tb::result<MIDIIndex, midi::Error>
 {
-    auto major = midi::MIDI::FromFile(major_path);
-    if (major.is_error())
-        return major.get_error();
+    auto midi_or_err = midi::MIDI::FromFile(path);
+    if (midi_or_err.is_error())
+        return midi_or_err.get_error();
 
-    auto minor = midi::MIDI::FromFile(minor_path);
-    if (minor.is_error())
-        return minor.get_error();
-
-    major_cadence = std::move(major.get_mut_unchecked());
-    minor_cadence = std::move(minor.get_mut_unchecked());
-
-    return tb::ok;
+    midis.emplace_back(std::move(midi_or_err.get_mut_unchecked()));
+    return static_cast<MIDIIndex>(midis.size() - 1);
 }
 
-auto Game::LoadExercises(std::string_view path) -> tb::error<LoadError>
+auto Resources::LoadExercises(std::string_view path) -> tb::error<LoadExercisesError>
 {
     FILE* file = fopen(path.data(), "r");
     if (file == nullptr)
-        return LoadError { LoadError::EXERCISES_NOT_FOUND };
+        return LoadExercisesError { LoadExercisesError::EXERCISES_NOT_FOUND };
 
     tb::scoped_guard close_file = [file] { fclose(file); };
 
@@ -106,24 +100,24 @@ auto Game::LoadExercises(std::string_view path) -> tb::error<LoadError>
         if (result.is_error()) {
             StreamError err = result.get_error();
             if (err != StreamError::FILE_ERROR)
-                return LoadError { LoadError::FORMAT_ERROR };
+                return LoadExercisesError { LoadExercisesError::FORMAT_ERROR };
             break;
         }
 
         auto& [path, type, tonality, difficulty] = result.get_unchecked();
 
-        auto midi = midi::MIDI::FromFile(std::string_view { path.value.data() });
+        auto midi_index = LoadMIDI(std::string_view { path.value.data() });
 
-        if (midi.is_error()) {
-            midi::Error err = midi.get_error();
+        if (midi_index.is_error()) {
+            midi::Error err = midi_index.get_error();
             if (err.type == midi::Error::FILE_NOT_FOUND)
-                return LoadError { LoadError::MIDI_NOT_FOUND };
+                return LoadExercisesError { LoadExercisesError::MIDI_NOT_FOUND };
 
-            return LoadError { LoadError::MIDI_ERROR };
+            return LoadExercisesError { LoadExercisesError::MIDI_ERROR };
         }
 
         exercises.emplace_back(Exercise {
-            .midi = std::move(midi.get_mut_unchecked()),
+            .midi = midi_index.get_unchecked(),
             .type = type.value,
             .tonality = tonality.value,
             .difficulty = difficulty.value
@@ -131,9 +125,17 @@ auto Game::LoadExercises(std::string_view path) -> tb::error<LoadError>
     }
 
     if (exercises.empty())
-        return LoadError { LoadError::EXERCISES_NOT_FOUND };
+        return LoadExercisesError { LoadExercisesError::EXERCISES_NOT_FOUND };
 
     return tb::ok;
+}
+
+Game::Game(const Resources& resources) : resources_(resources) {}
+
+void Game::SetCadences(MIDIIndex major, MIDIIndex minor)
+{
+    major_cadence = major;
+    minor_cadence = minor;
 }
 
 void Game::InputNote(uint8_t note)
@@ -185,21 +187,24 @@ void Game::InputNote(uint8_t note)
 auto Game::BeginNewExercise() -> tb::error<NoExercisesError>
 {
     static std::random_device rand_dev;
-    static std::uniform_int_distribution<size_t> exercise_index(0, exercises.size() - 1);
     static std::uniform_int_distribution<uint8_t> input_key(0, 11);
 
-    if (exercises.empty())
+    if (resources_.exercises.empty())
         return NoExercisesError {};
+
+    std::uniform_int_distribution<ExerciseIndex>
+        exercise_index(0, resources_.exercises.size() - 1);
 
     note_input_buffer_.clear();
     exercise_notes_.clear();
     state_ = GameState::PLAYING_CADENCE;
 
-    current_exercise_ = &exercises[exercise_index(rand_dev)];
+    current_exercise_ = exercise_index(rand_dev);
+    const Exercise* exercise_ptr = GetCurrentExercise();
     required_input_key_ = static_cast<midi::PitchClass>(input_key(rand_dev));
 
-    if (current_exercise_->type == ExerciseType::SINGLE_VOICE_TRANSCRIPTION) {
-        current_exercise_->midi.tracks[0].ToNoteSeries(exercise_notes_);
+    if (exercise_ptr->type == ExerciseType::SINGLE_VOICE_TRANSCRIPTION) {
+        resources_.midis[exercise_ptr->midi].tracks[0].ToNoteSeries(exercise_notes_);
     }
 
     return tb::ok;
@@ -207,7 +212,7 @@ auto Game::BeginNewExercise() -> tb::error<NoExercisesError>
 
 auto Game::GetCurrentExercise() const -> const Exercise*
 {
-    return current_exercise_;
+    return &(resources_.exercises[current_exercise_]);
 }
 
 auto Game::GetRequiredInputKey() const -> midi::PitchClass
@@ -217,15 +222,15 @@ auto Game::GetRequiredInputKey() const -> midi::PitchClass
 
 auto Game::GetCurrentCadenceMIDI() const -> const midi::MIDI*
 {
-    if (current_exercise_ == nullptr)
+    if (current_exercise_ == INVALID_RESOURCE)
         return nullptr;
 
-    switch (current_exercise_->tonality) {
+    switch (GetCurrentExercise()->tonality) {
     default:
     case Tonality::MAJOR:
-        return &major_cadence;
+        return &resources_.midis[major_cadence];
     case Tonality::MINOR:
-        return &minor_cadence;
+        return &resources_.midis[minor_cadence];
     }
 }
 

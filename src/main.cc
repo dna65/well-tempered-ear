@@ -77,21 +77,11 @@ auto SDL_AppInit_Safe(void** appstate, int argc, char** argv) -> SDL_AppResult
         SDL_ResumeAudioStreamDevice(sound_ctx.live_playback.stream.get());
 
     std::string_view exercises_file_path = argc >= 2 ? argv[1] : "exercises.txt";
+    constexpr std::string_view major_cadence = "midis/cadences/major.mid";
+    constexpr std::string_view minor_cadence = "midis/cadences/minor.mid";
 
-    if (auto result = ctx->game.LoadExercises(exercises_file_path); result.is_error()) {
-        LoadError err = result.get_error();
-        fmt::print("Failed to load exercises: {}\n", err.What());
+    if (ctx->LoadResources(exercises_file_path, major_cadence, minor_cadence).is_error())
         return SDL_APP_FAILURE;
-    }
-
-    if (auto result = ctx->game.LoadCadences(
-            "midis/cadences/major.mid",
-            "midis/cadences/minor.mid"
-        ); result.is_error()) {
-        midi::Error err = result.get_error();
-        fmt::print("Failed to load cadence midi files: {}\n", err.What());
-        return SDL_APP_FAILURE;
-    }
 
     SDL_ResumeAudioStreamDevice(sound_ctx.file_playback.stream.get());
 
