@@ -179,17 +179,18 @@ public:
     uint8_t transposition_offset_ = 0;
 };
 
-template<tb::either<uint8_t, PitchClass> T>
-constexpr auto NoteName(T note) -> std::string_view
-{
-    constexpr std::array<std::string_view, 12> NOTE_NAMES {
-        "C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"
-    };
+constexpr std::array<std::string_view, 12> NOTE_NAMES {
+    "C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"
+};
 
-    if constexpr (std::same_as<T, PitchClass>)
-        return NOTE_NAMES[static_cast<uint8_t>(note)];
-    else
-        return NOTE_NAMES[note % 12];
+constexpr auto NoteName(uint8_t note) -> std::string_view
+{
+    return NOTE_NAMES[note % 12];
+}
+
+constexpr auto NoteName(PitchClass note) -> std::string_view
+{
+    return NOTE_NAMES[static_cast<uint8_t>(note)];
 }
 
 constexpr auto GetPitchClass(uint8_t note) -> PitchClass
