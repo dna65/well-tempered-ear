@@ -174,8 +174,8 @@ private:
     TimePoint start_time_ = Clock::now();
     Ticks ticks_elapsed_ = 0;
     float ticks_per_second_ = 960.f;
-public:
     PlayerMode mode_;
+public:
     uint8_t transposition_offset_ = 0;
 };
 
