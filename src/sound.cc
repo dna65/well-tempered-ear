@@ -125,7 +125,7 @@ void Audio_FileCallback_Safe(void* ctx, SDL_AudioStream* stream, int additional_
             sample_buffer.end()
         };
 
-        size_t requested_samples = ticks.value() * samples_per_tick
+        size_t requested_samples = tb::get_unchecked(ticks) * samples_per_tick
             - samples_since_last_event;
         size_t samples_generated = generator.GenerateSamples(sample_buffer_range,
             requested_samples, file_player, samples_since_last_event, DEFAULT_SYNTH);

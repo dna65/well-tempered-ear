@@ -251,17 +251,19 @@ Player::Player(PlayerMode mode) : mode_(mode) {}
 
 auto Player::Advance() -> tb::error<EndOfMIDIError>
 {
-    std::optional<Ticks> ticks = TicksUntilNextEvent();
-    if (!ticks) return EndOfMIDIError {};
+    std::optional<Ticks> ticks_or_none = TicksUntilNextEvent();
+    if (!ticks_or_none) return EndOfMIDIError {};
 
-    ticks_elapsed_ += ticks.value();
+    Ticks ticks = tb::copy_unchecked(ticks_or_none);
+
+    ticks_elapsed_ += ticks;
 
     for (auto& [track, info] : tracks_) {
         if (info.done) continue;
 
         const Event& next_ev = track->events[info.current_event_index + 1];
-        if (next_ev.delta_time > ticks.value() + info.playback_ticks) {
-            info.playback_ticks += ticks.value();
+        if (next_ev.delta_time > ticks + info.playback_ticks) {
+            info.playback_ticks += ticks;
             continue;
         }
 
