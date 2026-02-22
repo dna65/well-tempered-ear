@@ -115,7 +115,7 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result)
 
 auto SDL_AppIterate_Safe(void* appstate) -> SDL_AppResult
 {
-    constexpr uint64_t MS_PER_FRAME = 1000 / 30;
+    constexpr static uint64_t MS_PER_FRAME = 1000 / 30;
     static uint64_t ms_elapsed = SDL_GetTicks();
 
     uint64_t time_diff = SDL_GetTicks() - ms_elapsed;
@@ -160,9 +160,9 @@ auto SDL_AppEvent_Safe(void* appstate, SDL_Event* event) -> SDL_AppResult
         break;
     }
 
-    if (event->type == EventType<MIDIPlayerEndEvent>()) {
+    if (event->type == MIDIPlayerEndEvent::EVENT_NUMBER) {
         ctx->MIDIEnded();
-    } else if (event->type == EventType<MIDIInputEvent>()) {
+    } else if (event->type == MIDIInputEvent::EVENT_NUMBER) {
         auto* ev = reinterpret_cast<MIDIInputEvent*>(event);
 
         if (ev->type == midi::EventType::NOTE_ON)

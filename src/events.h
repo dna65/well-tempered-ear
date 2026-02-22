@@ -6,28 +6,19 @@
 #include "midi.h"
 
 template<typename T>
-auto EventType() -> uint32_t
-{
-    const static uint32_t event_type = [] {
-        uint32_t event = SDL_RegisterEvents(1);
-        if (event == std::numeric_limits<uint32_t>::max())
-            throw std::runtime_error { "No available SDL events" };
-        return event;
-    }();
-    return event_type;
-}
-
-template<typename T>
 auto BaseEvent() -> SDL_CommonEvent
 {
     return {
-        .type = EventType<T>(),
+        .type = T::EVENT_NUMBER,
         .timestamp = SDL_GetTicksNS()
     };
 }
 
+auto NextAvailableEventNumber() -> uint32_t;
+
 struct MIDIInputEvent
 {
+    const static inline uint32_t EVENT_NUMBER = NextAvailableEventNumber();
     const SDL_CommonEvent base_event = BaseEvent<MIDIInputEvent>();
     midi::EventType type;
     uint8_t note, velocity, channel;
@@ -35,5 +26,6 @@ struct MIDIInputEvent
 
 struct MIDIPlayerEndEvent
 {
+    const static inline uint32_t EVENT_NUMBER = NextAvailableEventNumber();
     const SDL_CommonEvent base_event = BaseEvent<MIDIPlayerEndEvent>();
 };
