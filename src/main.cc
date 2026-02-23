@@ -6,8 +6,6 @@
 #include "sound.h"
 #include "usb.h"
 
-#include <fmt/format.h>
-
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
@@ -18,12 +16,12 @@ constexpr int SAMPLE_RATE = 64000;
 auto SDL_AppInit_Safe(void** appstate, int argc, char** argv) -> SDL_AppResult
 {
     if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
-        fmt::print("Failed to initialise SDL: {}\n", SDL_GetError());
+        tb::print("Failed to initialise SDL: {}\n", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
     if (auto result = usb::Init(); result.is_error()) {
-        fmt::print("Failed to initialise libusb: {}\n", result.get_error().What());
+        tb::print("Failed to initialise libusb: {}\n", result.get_error().What());
         return SDL_APP_FAILURE;
     }
 
@@ -48,7 +46,7 @@ auto SDL_AppInit_Safe(void** appstate, int argc, char** argv) -> SDL_AppResult
     };
 
     if (ctx->window == nullptr) {
-        fmt::print("Failed to create window: {}\n", SDL_GetError());
+        tb::print("Failed to create window: {}\n", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
@@ -65,12 +63,12 @@ auto SDL_AppInit_Safe(void** appstate, int argc, char** argv) -> SDL_AppResult
     );
 
     if (!sound_ctx.live_playback.stream || !sound_ctx.file_playback.stream) {
-        fmt::print("Failed to open audio streams: {}\n", SDL_GetError());
+        tb::print("Failed to open audio streams: {}\n", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
     if (auto result = ctx->SetupMIDIControllerConnection(); result.is_error()) {
-        fmt::print("Couldn't find device for live MIDI playback\n");
+        tb::print("Couldn't find device for live MIDI playback\n");
     }
 
     if (ctx->device_handle.dev_handle)
@@ -90,7 +88,7 @@ auto SDL_AppInit_Safe(void** appstate, int argc, char** argv) -> SDL_AppResult
     for (uint32_t event_type = 0x200; event_type < 0x300; ++event_type)
         SDL_SetEventEnabled(event_type, false);
 
-    fmt::print("Press Q to quit\n");
+    tb::print("Press Q to quit\n");
 
     return SDL_APP_CONTINUE;
 }
@@ -100,7 +98,7 @@ auto SDL_AppInit(void** appstate, int argc, char** argv) -> SDL_AppResult
     try {
         return SDL_AppInit_Safe(appstate, argc, argv);
     } catch (std::exception& e) {
-        fmt::print("Exception occurred: {}\n", e.what());
+        tb::print("Exception occurred: {}\n", e.what());
         return SDL_APP_FAILURE;
     }
 }
@@ -131,7 +129,7 @@ auto SDL_AppIterate(void* appstate) -> SDL_AppResult
     try {
         return SDL_AppIterate_Safe(appstate);
     } catch (std::exception& e) {
-        fmt::print("Exception occurred: {}\n", e.what());
+        tb::print("Exception occurred: {}\n", e.what());
         return SDL_APP_FAILURE;
     }
 }
@@ -179,7 +177,7 @@ auto SDL_AppEvent(void* appstate, SDL_Event* event) -> SDL_AppResult
     try {
         return SDL_AppEvent_Safe(appstate, event);
     } catch (std::exception& e) {
-        fmt::print("Exception occurred: {}\n", e.what());
+        tb::print("Exception occurred: {}\n", e.what());
         return SDL_APP_FAILURE;
     }
 }

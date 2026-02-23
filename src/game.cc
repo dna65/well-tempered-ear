@@ -152,7 +152,7 @@ void Game::InputNote(uint8_t note)
         + downward_transposition_factor;
 
     auto wrong_note = [this, comparator, note] () {
-        fmt::print("Wrong note: {} (should have been {})!\n", midi::NoteName(note),
+        tb::print("Wrong note: {} (should have been {})!\n", midi::NoteName(note),
             midi::NoteName(comparator));
         state_ = GameState::WAIT_FOR_READY;
     };
@@ -178,7 +178,7 @@ void Game::InputNote(uint8_t note)
     note_input_buffer_.push_back(note);
 
     if (note_input_buffer_.size() >= exercise_notes_.size()) {
-        fmt::print("Correct!\n");
+        tb::print("Correct!\n");
         state_ = GameState::WAIT_FOR_READY;
         return;
     }

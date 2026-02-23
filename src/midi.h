@@ -11,8 +11,6 @@
 
 #include "stream.h"
 
-#include <fmt/format.h>
-
 #include <tb/tb.h>
 
 namespace midi

@@ -92,7 +92,7 @@ void Audio_LiveCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
     try {
         Audio_LiveCallback_Safe(ctx, stream, additional_amount, total_amount);
     } catch (std::exception& e) {
-        fmt::print("Exception occurred: {}\n", e.what());
+        tb::print("Exception occurred: {}\n", e.what());
         throw;
     }
 }
@@ -157,7 +157,7 @@ void Audio_FileCallback(void* ctx, SDL_AudioStream* stream, int additional_amoun
     try {
         Audio_FileCallback_Safe(ctx, stream, additional_amount, total_amount);
     } catch (std::exception& e) {
-        fmt::print("Exception occurred: {}\n", e.what());
+        tb::print("Exception occurred: {}\n", e.what());
         throw;
     }
 }

@@ -1,7 +1,5 @@
 #include "app.h"
 
-#include <fmt/format.h>
-
 #include "events.h"
 
 #include <random>
@@ -43,19 +41,19 @@ auto AppContext::LoadResources(std::string_view exercises_path,
 {
     if (auto result = resources.LoadExercises(exercises_path);
         result.is_error()) {
-        fmt::print("Failed to load exercises: {}\n", result.get_error().What());
+        tb::print("Failed to load exercises: {}\n", result.get_error().What());
         return LoadResourcesError {};
     }
 
     auto major = resources.LoadMIDI(major_cadence);
     if (major.is_error()) {
-        fmt::print("Failed to load '{}': {}\n", major_cadence, major.get_error().What());
+        tb::print("Failed to load '{}': {}\n", major_cadence, major.get_error().What());
         return LoadResourcesError {};
     }
 
     auto minor = resources.LoadMIDI(minor_cadence);
     if (minor.is_error()) {
-        fmt::print("Failed to load '{}': {}\n", minor_cadence, minor.get_error().What());
+        tb::print("Failed to load '{}': {}\n", minor_cadence, minor.get_error().What());
         return LoadResourcesError {};
     }
 
@@ -68,14 +66,14 @@ auto AppContext::SetupMIDIControllerConnection() -> tb::error<usb::Error>
 {
     auto list_or_err = usb::IndexDevices();
     if (list_or_err.is_error()) {
-        fmt::print("Failed to index USB devices: {}\n",
+        tb::print("Failed to index USB devices: {}\n",
             list_or_err.get_error().What());
         return list_or_err.get_error();
     }
 
     auto devs_or_err = usb::SearchMIDIDevices(list_or_err.get_unchecked());
     if (devs_or_err.is_error()) {
-        fmt::print("Failed to search for midi devices: {}\n",
+        tb::print("Failed to search for midi devices: {}\n",
             devs_or_err.get_error().What());
         return devs_or_err.get_error();
     }
@@ -89,7 +87,7 @@ auto AppContext::SetupMIDIControllerConnection() -> tb::error<usb::Error>
 
     auto handle_or_err = entry.Open(nullptr);
     if (handle_or_err.is_error()) {
-        fmt::print("Error opening MIDI device for IO: {}\n",
+        tb::print("Error opening MIDI device for IO: {}\n",
             handle_or_err.get_error().What());
         return handle_or_err.get_error();
     }
@@ -108,7 +106,7 @@ void AppContext::PlayLiveMIDIEvent(const MIDIInputEvent& event)
 
     int bytes_queued = SDL_GetAudioStreamQueued(stream);
     if (bytes_queued == -1) {
-        fmt::print("Error inspecting audio stream: {}\n", SDL_GetError());
+        tb::print("Error inspecting audio stream: {}\n", SDL_GetError());
         return;
     }
 
@@ -156,7 +154,7 @@ void AppContext::MIDIEnded()
         game.MIDIEnded();
         break;
     case GameState::PLAYING_EXERCISE:
-        fmt::print("Now play it in the key of {}!\n",
+        tb::print("Now play it in the key of {}!\n",
             midi::NoteName(game.GetRequiredInputKey()));
         game.MIDIEnded();
         break;

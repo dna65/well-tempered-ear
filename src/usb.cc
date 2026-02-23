@@ -1,7 +1,5 @@
 #include "usb.h"
 
-#include <fmt/core.h>
-
 namespace usb
 {
 
@@ -59,7 +57,7 @@ void TransferCallback(libusb_transfer* transfer)
         transfer->timeout);
 
     if (int err = libusb_submit_transfer(transfer); err != LIBUSB_SUCCESS) {
-        fmt::print("Error submitting transfer: {}\n", libusb_strerror(err));
+        tb::print("Error submitting transfer: {}\n", libusb_strerror(err));
     }
 }
 
@@ -73,7 +71,7 @@ void DeviceHandle::ReceiveBulkPackets(libusb_transfer_cb_fn cb)
         1000);
 
     if (int err = libusb_submit_transfer(transfer.get()); err != LIBUSB_SUCCESS) {
-        fmt::print("Error submitting transfer: {}\n", libusb_strerror(err));
+        tb::print("Error submitting transfer: {}\n", libusb_strerror(err));
     }
 }
 
@@ -90,7 +88,7 @@ PollingContext::PollingContext()
             while (libusb_handle_events_completed(nullptr, nullptr) == LIBUSB_SUCCESS
                 && !done_) {}
         } catch (std::exception& e) {
-            fmt::print("Exception occurred: {}\n", e.what());
+            tb::print("Exception occurred: {}\n", e.what());
             throw;
         }
     });
