@@ -103,7 +103,7 @@ PollingContext::~PollingContext()
 
 auto Init() -> tb::error<Error>
 {
-    int err = libusb_init_context(NULL, NULL, 0);
+    int err = libusb_init_context(nullptr, nullptr, 0);
     if (err != LIBUSB_SUCCESS)
         return Error { err };
     return tb::ok;
@@ -112,7 +112,7 @@ auto Init() -> tb::error<Error>
 auto IndexDevices() -> tb::result<DeviceList, Error>
 {
     libusb_device** devices;
-    ssize_t count = libusb_get_device_list(NULL, &devices);
+    ssize_t count = libusb_get_device_list(nullptr, &devices);
     if (count < 0)
         return Error { static_cast<int>(count) };
 
@@ -219,7 +219,7 @@ auto SearchMIDIDevices(const DeviceList& list)
 
 void Exit()
 {
-    libusb_exit(NULL);
+    libusb_exit(nullptr);
 }
 
 }
