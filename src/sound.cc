@@ -75,7 +75,7 @@ void Audio_LiveCallback_Safe(void* ctx, SDL_AudioStream* stream, int additional_
     PlaybackUnit& playback_unit = sound_ctx->live_playback;
 
     Generator& generator = playback_unit.generator;
-    midi::Player& live_player = playback_unit.player;
+    const midi::Player& live_player = playback_unit.player;
     std::span<Sample> sample_buffer = playback_unit.sample_buffer.view();
 
     std::ranges::fill(sample_buffer, Sample {});
