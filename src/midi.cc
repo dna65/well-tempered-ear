@@ -135,8 +135,11 @@ auto Track::FromStream(FILE* file, uint32_t track_size) -> tb::result<Track, Err
             switch (e_type) {
             case EventType::NOTE_OFF:
             case EventType::NOTE_ON: {
-                auto [note, vel]
-                    = stream.Read(tb::type_tag<uint8_t, uint8_t>).get_unchecked();
+                auto note_info
+                    = stream.Read(tb::type_tag<uint8_t, uint8_t>);
+                if (note_info.is_error())
+                    return bad_event_error();
+                auto [note, vel] = note_info.get_unchecked();
                 track.events.push_back({
                     .delta_time = delta.value,
                     .type = vel == 0 ? EventType::NOTE_OFF : e_type,
@@ -275,16 +278,14 @@ auto Player::Advance() -> tb::error<EndOfMIDIError>
 
         switch (next_ev.type) {
         case EventType::NOTE_ON:
-            if (next_ev.note_event.note > MAX_NOTE) break;
-            notes_[next_ev.note_event.note] = {
+            notes_[next_ev.note_event.note & 0x7F] = {
                 .time = ticks_elapsed_,
                 .velocity = next_ev.note_event.velocity,
                 .note_on = true
             };
             break;
         case EventType::NOTE_OFF:
-            if (next_ev.note_event.note > MAX_NOTE) break;
-            notes_[next_ev.note_event.note].note_on = false;
+            notes_[next_ev.note_event.note & 0x7F].note_on = false;
             break;
         case EventType::META:
             switch (next_ev.meta_type) {
@@ -313,16 +314,14 @@ void Player::PlayEvent(const Event& event)
     ticks_elapsed_ = ticks_per_second_ * time_diff.count();
     switch (event.type) {
     case EventType::NOTE_ON:
-        if (event.note_event.note > MAX_NOTE) return;
-        notes_[event.note_event.note] = {
+        notes_[event.note_event.note & 0x7F] = {
             .time = ticks_elapsed_,
             .velocity = event.note_event.velocity,
             .note_on = true
         };
         break;
     case EventType::NOTE_OFF:
-        if (event.note_event.note > MAX_NOTE) return;
-        notes_[event.note_event.note].note_on = false;
+        notes_[event.note_event.note & 0x7F].note_on = false;
         break;
     default:
         break;
