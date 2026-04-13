@@ -76,7 +76,7 @@ auto Resources::LoadMIDI(std::string_view path)
         return midi_or_err.get_error();
 
     midis.emplace_back(std::move(midi_or_err.get_mut_unchecked()));
-    return static_cast<MIDIIndex>(midis.size() - 1);
+    return tb::alias_cast<MIDIIndex>(midis.size() - 1);
 }
 
 auto Resources::LoadExercises(std::string_view path) -> tb::error<LoadExercisesError>
@@ -192,19 +192,21 @@ auto Game::BeginNewExercise() -> tb::error<NoExercisesError>
     if (resources_.exercises.empty())
         return NoExercisesError {};
 
-    std::uniform_int_distribution<ExerciseIndex>
+    std::uniform_int_distribution<ExerciseIndex::underlying_t>
         exercise_index(0, resources_.exercises.size() - 1);
 
     note_input_buffer_.clear();
     exercise_notes_.clear();
     state_ = GameState::PLAYING_CADENCE;
 
-    current_exercise_ = exercise_index(rand_dev);
+    current_exercise_ = { exercise_index(rand_dev) };
     const Exercise* exercise_ptr = GetCurrentExercise();
     required_input_key_ = static_cast<midi::PitchClass>(input_key(rand_dev));
 
     if (exercise_ptr->type == ExerciseType::SINGLE_VOICE_TRANSCRIPTION) {
-        resources_.midis[exercise_ptr->midi].tracks[0].ToNoteSeries(exercise_notes_);
+        resources_.midis[exercise_ptr->midi.value].tracks[0].ToNoteSeries(
+            exercise_notes_
+        );
     }
 
     return tb::ok;
@@ -212,7 +214,7 @@ auto Game::BeginNewExercise() -> tb::error<NoExercisesError>
 
 auto Game::GetCurrentExercise() const -> const Exercise*
 {
-    return &(resources_.exercises[current_exercise_]);
+    return &(resources_.exercises[current_exercise_.value]);
 }
 
 auto Game::GetRequiredInputKey() const -> midi::PitchClass
@@ -228,9 +230,9 @@ auto Game::GetCurrentCadenceMIDI() const -> const midi::MIDI*
     switch (GetCurrentExercise()->tonality) {
     default:
     case Tonality::MAJOR:
-        return &resources_.midis[major_cadence];
+        return &resources_.midis[major_cadence.value];
     case Tonality::MINOR:
-        return &resources_.midis[minor_cadence];
+        return &resources_.midis[minor_cadence.value];
     }
 }
 

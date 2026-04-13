@@ -64,10 +64,24 @@ inline constexpr auto tb::enum_names<Tonality> = std::to_array({
 });
 
 using ResourceIndex = uint32_t;
-constexpr ResourceIndex INVALID_RESOURCE = std::numeric_limits<ResourceIndex>::max();
 
-using MIDIIndex = ResourceIndex;
-using ExerciseIndex = ResourceIndex;
+using MIDIIndex = tb::alias<ResourceIndex>;
+using ExerciseIndex = tb::alias<ResourceIndex>;
+
+struct InvalidResource
+{
+    constexpr static auto VALUE = std::numeric_limits<ResourceIndex>::max();
+
+    template<tb::alias_of<ResourceIndex> T>
+    operator T() const { return { VALUE }; }
+};
+
+constexpr static InvalidResource INVALID_RESOURCE {};
+
+constexpr auto operator==(tb::alias_of<ResourceIndex> auto idx, InvalidResource) -> bool
+{
+    return idx.value == InvalidResource::VALUE;
+}
 
 struct Exercise
 {
