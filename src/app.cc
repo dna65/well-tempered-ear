@@ -150,7 +150,7 @@ void AppContext::MIDIEnded()
 
     switch (game.GetState()) {
     case GameState::PLAYING_CADENCE:
-        player.SetMIDI(resources.midis[game.GetCurrentExercise()->midi]);
+        player.SetMIDI(resources.midis[game.GetCurrentExercise()->midi.value]);
         game.MIDIEnded();
         break;
     case GameState::PLAYING_EXERCISE:
