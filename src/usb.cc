@@ -101,6 +101,11 @@ PollingContext::~PollingContext()
     thread_.join();
 }
 
+void free_dev_list(libusb_device** ptr)
+{
+    libusb_free_device_list(ptr, true);
+}
+
 auto Init() -> tb::error<Error>
 {
     int err = libusb_init_context(nullptr, nullptr, 0);

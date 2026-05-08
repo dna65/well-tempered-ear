@@ -72,10 +72,7 @@ struct DeviceHandle
     ~DeviceHandle();
 };
 
-inline void free_dev_list(libusb_device** ptr)
-{
-    libusb_free_device_list(ptr, true);
-}
+void free_dev_list(libusb_device** ptr);
 
 using DeviceList = std::unique_ptr<libusb_device*, tb::deleter<free_dev_list>>;
 
