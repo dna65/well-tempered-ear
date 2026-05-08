@@ -8,6 +8,8 @@ set(CMAKE_CXX_FLAGS "-Wall -Werror")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# TODO: No config or find-module for the thoroughbase C++20 library, will address
+# later
 find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
 find_package(libusb REQUIRED)
 
