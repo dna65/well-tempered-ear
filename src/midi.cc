@@ -2,20 +2,13 @@
 
 #include <limits>
 
-struct VariableLengthInt
-{
-    uint32_t value = 0;
-};
-
-struct UInt24
-{
-    uint32_t value = 0;
-};
+using VariableLengthInt = tb::alias<uint32_t>;
+using UInt24 = tb::alias<uint32_t>;
 
 template<>
 auto TypedRead(Stream stream) -> tb::result<VariableLengthInt, StreamError>
 {
-    VariableLengthInt result = { 0 };
+    VariableLengthInt result { 0 };
 
     for (size_t i = 0; i < sizeof(uint32_t); ++i) {
         uint8_t byte;
@@ -35,7 +28,7 @@ auto TypedRead(Stream stream) -> tb::result<VariableLengthInt, StreamError>
 template<>
 auto TypedRead(Stream stream) -> tb::result<UInt24, StreamError>
 {
-    UInt24 result = { 0 };
+    UInt24 result { 0 };
 
     for (size_t i = 0; i < 3 * sizeof(uint8_t); ++i) {
         uint8_t byte;
