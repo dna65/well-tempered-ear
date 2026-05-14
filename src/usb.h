@@ -63,10 +63,10 @@ struct DeviceHandle
     DeviceHandle() = default;
 
     DeviceHandle(const DeviceHandle&) = delete;
-    DeviceHandle& operator=(const DeviceHandle&) = delete;
+    auto operator=(const DeviceHandle&) -> DeviceHandle& = delete;
 
     DeviceHandle(DeviceHandle&&) = default;
-    DeviceHandle& operator=(DeviceHandle&&) = default;
+    auto operator=(DeviceHandle&&) -> DeviceHandle& = default;
 
     void ReceiveBulkPackets(libusb_transfer_cb_fn cb);
     ~DeviceHandle();
