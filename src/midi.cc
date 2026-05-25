@@ -237,7 +237,7 @@ auto MIDI::FromStream(FILE* file) -> tb::result<MIDI, Error>
         if (track.is_error())
             return track.get_error();
 
-        midi.tracks.emplace_back(track.get_mut_unchecked());
+        midi.tracks.emplace_back(std::move(track.get_mut_unchecked()));
     }
 
     return midi;
